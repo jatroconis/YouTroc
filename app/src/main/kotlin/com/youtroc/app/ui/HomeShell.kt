@@ -36,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.foundation.focusGroup
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -67,14 +68,14 @@ private val RailExpandedWidth = 240.dp
 fun HomeShell() {
     val shelves = remember { fakeShelves() }
     var selectedIndex by remember { mutableIntStateOf(1) } // Home
-    val firstCardFocus = remember { FocusRequester() }
+    val contentFocus = remember { FocusRequester() }
     var railFocused by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        runCatching { firstCardFocus.requestFocus() }
+        runCatching { contentFocus.requestFocus() }
     }
     BackHandler(enabled = railFocused) {
-        runCatching { firstCardFocus.requestFocus() }
+        runCatching { contentFocus.requestFocus() }
     }
 
     Surface(modifier = Modifier.fillMaxSize()) {
@@ -99,9 +100,12 @@ fun HomeShell() {
                 }
 
                 LazyColumn(
-                    // A focus group so D-pad up/down stays inside the card grid
-                    // instead of leaking to the rail overlay on the left.
-                    modifier = Modifier.focusGroup(),
+                    // Content focus group: up/down stays in the card grid, and the rail's
+                    // RIGHT re-enters here landing on a VISIBLE card — never an off-screen,
+                    // recycled one (which was the "stuck in the rail" bug).
+                    modifier = Modifier
+                        .focusRequester(contentFocus)
+                        .focusGroup(),
                     verticalArrangement = Arrangement.spacedBy(YouTrocDimens.shelfSpacing),
                     contentPadding = PaddingValues(bottom = YouTrocDimens.overscanVertical),
                 ) {
@@ -109,12 +113,11 @@ fun HomeShell() {
                         items = shelves,
                         key = { _, shelf -> shelf.title },
                         contentType = { _, _ -> "shelf" },
-                    ) { index, shelf ->
+                    ) { _, shelf ->
                         ShelfRow(
                             title = shelf.title,
                             videos = shelf.videos,
                             onVideoClick = { /* player destination lands in a later slice */ },
-                            firstCardFocusRequester = if (index == 0) firstCardFocus else null,
                         )
                     }
                 }
@@ -125,7 +128,7 @@ fun HomeShell() {
                 railFocused = railFocused,
                 selectedIndex = selectedIndex,
                 onSelect = { selectedIndex = it },
-                contentFocus = firstCardFocus,
+                contentFocus = contentFocus,
                 modifier = Modifier
                     .fillMaxHeight()
                     .onFocusChanged { railFocused = it.hasFocus },
