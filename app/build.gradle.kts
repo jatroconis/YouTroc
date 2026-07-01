@@ -62,6 +62,10 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     debugImplementation(libs.androidx.compose.ui.tooling)
 
+    // Navigation + ViewModel wiring for the container/presentational screens.
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
 

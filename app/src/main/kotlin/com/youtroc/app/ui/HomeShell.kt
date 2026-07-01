@@ -68,7 +68,9 @@ private val RailExpandedWidth = 240.dp
  */
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun HomeShell() {
+fun HomeShell(
+    onVideoClick: (VideoCardUi) -> Unit = {},
+) {
     val shelves = remember { fakeShelves() }
     var selectedIndex by remember { mutableIntStateOf(1) } // Home
     val contentFocus = remember { FocusRequester() }
@@ -132,7 +134,7 @@ fun HomeShell() {
                         ShelfRow(
                             title = shelf.title,
                             videos = shelf.videos,
-                            onVideoClick = { /* player destination lands in a later slice */ },
+                            onVideoClick = onVideoClick,
                         )
                     }
                 }

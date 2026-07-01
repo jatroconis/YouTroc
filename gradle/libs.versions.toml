@@ -19,6 +19,8 @@ composeBom = "2026.06.00"
 tvMaterial = "1.1.0"
 # Pinned to the Kotlin-2.2 generation: Coil 3.5 ships Kotlin 2.4 metadata.
 coil = "3.3.0"
+# Navigation for Compose; 2.9.x aligns with lifecycle 2.9 / activity 1.10.
+androidxNavigation = "2.9.3"
 
 [libraries]
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
@@ -44,6 +46,8 @@ androidx-tv-material = { module = "androidx.tv:tv-material", version.ref = "tvMa
 androidx-compose-material-icons-core = { group = "androidx.compose.material", name = "material-icons-core" }
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
 coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil" }
+androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "androidxNavigation" }
+androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "androidxLifecycle" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
