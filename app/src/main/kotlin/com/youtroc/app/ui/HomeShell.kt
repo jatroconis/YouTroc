@@ -32,8 +32,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.focusGroup
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
@@ -64,6 +66,7 @@ private val RailExpandedWidth = 240.dp
  * the label overflows beside it as decoration, so a D-pad RIGHT always finds the
  * content to the right — the rail expands like YouTube's without trapping focus.
  */
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun HomeShell() {
     val shelves = remember { fakeShelves() }
@@ -105,6 +108,18 @@ fun HomeShell() {
                     // recycled one (which was the "stuck in the rail" bug).
                     modifier = Modifier
                         .focusRequester(contentFocus)
+                        .focusProperties {
+                            // Keep vertical navigation inside the grid; only LEFT reaches
+                            // the rail. Prevents the rail auto-opening on DOWN at the bottom.
+                            @Suppress("DEPRECATION")
+                            exit = { direction ->
+                                if (direction == FocusDirection.Up || direction == FocusDirection.Down) {
+                                    FocusRequester.Cancel
+                                } else {
+                                    FocusRequester.Default
+                                }
+                            }
+                        }
                         .focusGroup(),
                     verticalArrangement = Arrangement.spacedBy(YouTrocDimens.shelfSpacing),
                     contentPadding = PaddingValues(bottom = YouTrocDimens.overscanVertical),
