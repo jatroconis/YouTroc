@@ -51,9 +51,19 @@ sealed interface DpadAction {
  *   long-press from a plain tap on its own — when [longPressActive] is
  *   `true`, the terminal `KeyUp` is swallowed instead of firing an extra
  *   single-step seek on top of the fast-seek ticks already applied.
- * - CENTER/Enter/DOWN are only special-cased while [OverlayState.Hidden]:
- *   once Revealed, the rows are composed and Compose's normal focus/click
- *   handling already does the right thing.
+ * - CENTER/Enter toggle play/pause directly (docs/07 §191) whenever
+ *   [controlsFocused] is `false` — Hidden OR Revealed-but-unfocused (e.g.
+ *   after a single L/R tap only revealed the overlay without moving focus
+ *   into a row). This is MINOR reachability fix #3: previously CENTER/Enter
+ *   was gated to [OverlayState.Hidden] only, so once revealed-but-unfocused
+ *   there was no way to toggle play/pause without first navigating DOWN into
+ *   the transport row. The caller's [DpadAction.PlayPause] handling already
+ *   reveals via `registerActivity()` regardless of prior state, so no extra
+ *   state distinction is needed here.
+ * - DOWN is still only special-cased while [OverlayState.Hidden] (reveal AND
+ *   move focus into the transport row); once Revealed, the rows are already
+ *   composed and Compose's normal focus search handles DOWN correctly on its
+ *   own.
  */
 fun decideDpadAction(
     key: Key,
@@ -87,11 +97,13 @@ fun decideDpadAction(
         }
     }
 
-    if (type == KeyEventType.KeyUp && !controlsFocused && overlayState is OverlayState.Hidden) {
-        return when (key) {
-            Key.DirectionDown -> DpadAction.EnterControls
-            Key.DirectionCenter, Key.Enter -> DpadAction.PlayPause
-            else -> DpadAction.Ignore
+    if (type == KeyEventType.KeyUp && !controlsFocused) {
+        when (key) {
+            // MINOR fix #3: PlayPause applies whenever controls are not
+            // focused, Hidden or Revealed — dropped the Hidden-only gate.
+            Key.DirectionCenter, Key.Enter -> return DpadAction.PlayPause
+            Key.DirectionDown -> if (overlayState is OverlayState.Hidden) return DpadAction.EnterControls
+            else -> {}
         }
     }
 

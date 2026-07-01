@@ -52,6 +52,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
@@ -95,9 +96,17 @@ import kotlinx.coroutines.delay
  * flips to `true`, one frame AFTER the key event that revealed them, so
  * calling `requestFocus()` inline during the event handler targets a node
  * that isn't attached yet and silently throws (swallowed by `runCatching`).
- * CENTER/Enter from Hidden skips focus entirely and calls [onPlayPause]
- * directly (docs/07 §191: CENTER = play/pause), since there is no
- * not-yet-composed button to focus.
+ * CENTER/Enter skip focus entirely and call [onPlayPause] directly (docs/07
+ * §191: CENTER = play/pause) whenever no control-row button owns focus —
+ * Hidden (no not-yet-composed button to focus) OR Revealed-but-unfocused
+ * (e.g. right after a single L/R tap only revealed the overlay without
+ * moving focus into a row).
+ *
+ * D-pad navigation ([Key.DirectionLeft]/[Key.DirectionRight]/[Key.DirectionUp]/
+ * [Key.DirectionDown]/[Key.DirectionCenter]/[Key.Enter]) counts as control
+ * activity and restarts the 4s auto-hide timer even while browsing between
+ * buttons/rows with focus already inside the controls, not just on click —
+ * see [isDpadNavigationKey] in the key handler below.
  *
  * Knows nothing about Media3 or the concrete engine — only the domain
  * [PlaybackState] snapshot and plain callbacks. Integration-only:
@@ -185,6 +194,19 @@ fun PlayerOverlay(
                 // the KeyDown/KeyUp pair — reset at the start of a fresh press.
                 if (keyEvent.type == KeyEventType.KeyDown && repeatCount == 0) {
                     longPressActive = false
+                }
+
+                // MAJOR M4 (round 2): navigating BETWEEN buttons/rows with the
+                // D-pad while a control already owns focus never reached
+                // registerActivity() before — only onClick and the Column's
+                // onFocusChanged (which fires once, when the Column itself
+                // gains focus, not on every row-to-row move) did. Browsing the
+                // controls without clicking anything IS activity (REQ-11), so
+                // register it here and still let Compose perform its own
+                // focus move (decideDpadAction always resolves to Ignore -> false
+                // while controlsFocused, so this never double-handles the key).
+                if (controlsFocused && keyEvent.type == KeyEventType.KeyDown && isDpadNavigationKey(keyEvent.key)) {
+                    registerActivity()
                 }
 
                 val action = decideDpadAction(
@@ -278,6 +300,20 @@ fun PlayerOverlay(
             }
         }
     }
+}
+
+/**
+ * D-pad direction/center keys count as control activity (MAJOR M4, round 2)
+ * regardless of what [decideDpadAction] resolves them to. Compose glue only —
+ * no pure decision to unit-test here, same integration-only convention as the
+ * rest of this composable's key/focus handling.
+ */
+private fun isDpadNavigationKey(key: Key): Boolean = when (key) {
+    Key.DirectionLeft, Key.DirectionRight, Key.DirectionUp, Key.DirectionDown,
+    Key.DirectionCenter, Key.Enter,
+    -> true
+
+    else -> false
 }
 
 @Composable

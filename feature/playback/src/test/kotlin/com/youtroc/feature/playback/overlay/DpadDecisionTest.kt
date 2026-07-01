@@ -154,6 +154,34 @@ class DpadDecisionTest {
     }
 
     @Test
+    fun `CENTER while revealed and not controls-focused toggles play-pause directly`() {
+        val action = decideDpadAction(
+            key = Key.DirectionCenter,
+            type = KeyEventType.KeyUp,
+            repeatCount = 0,
+            longPressActive = false,
+            controlsFocused = false,
+            overlayState = OverlayState.Revealed(sinceMs = 1_000L),
+        )
+
+        assertEquals(DpadAction.PlayPause, action)
+    }
+
+    @Test
+    fun `Enter while revealed and not controls-focused toggles play-pause directly`() {
+        val action = decideDpadAction(
+            key = Key.Enter,
+            type = KeyEventType.KeyUp,
+            repeatCount = 0,
+            longPressActive = false,
+            controlsFocused = false,
+            overlayState = OverlayState.Revealed(sinceMs = 1_000L),
+        )
+
+        assertEquals(DpadAction.PlayPause, action)
+    }
+
+    @Test
     fun `direction keys are ignored once focus is inside the controls`() {
         val action = decideDpadAction(
             key = Key.DirectionLeft,
