@@ -49,6 +49,7 @@ fun AppNavHost() {
             val state by viewModel.state.collectAsState()
 
             PlayerScreen(
+                videoId = videoId,
                 state = state,
                 onBack = { navController.popBackStack() },
                 onRetry = viewModel::resolve,

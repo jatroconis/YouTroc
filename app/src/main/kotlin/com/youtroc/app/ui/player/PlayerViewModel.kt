@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.youtroc.core.domain.playback.GetPlayableStreams
-import com.youtroc.core.domain.stream.StreamKind
 import com.youtroc.core.domain.stream.StreamResult
 import com.youtroc.core.domain.video.VideoId
 import com.youtroc.data.extraction.NewPipeStreamProvider
@@ -15,12 +14,15 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 /**
- * Container for the player screen: turns a [VideoId] into a deterministic
- * [PlayerUiState] by driving the [GetPlayableStreams] use case. It knows nothing
- * about Media3 or Compose — the surface renders whatever state it emits.
+ * Container for the player screen's EXTRACTION phase: turns a [VideoId] into
+ * a deterministic [PlayerUiState] by driving the [GetPlayableStreams] use
+ * case. It knows nothing about Media3/ExoPlayer or Compose.
  *
- * For now it picks the first MUXED (progressive) stream: one URL with video+audio,
- * the simplest thing that plays. Adaptive DASH is a later slice (ADR-7).
+ * Once resolved, playback CONTROL is handed off entirely to
+ * `:feature:playback`'s `PlaybackViewModel` (wired by [PlaybackRoute]), so
+ * this ViewModel's only remaining job is picking up the
+ * [com.youtroc.core.domain.playback.PlaybackManifest] the delivery policy
+ * already selected (DASH-first, never a lone video-only track — REQ-9).
  */
 class PlayerViewModel(
     private val getPlayableStreams: GetPlayableStreams,
@@ -40,9 +42,10 @@ class PlayerViewModel(
             _state.value = PlayerUiState.Loading
             _state.value = when (val result = getPlayableStreams(VideoId(videoId))) {
                 is StreamResult.Success -> {
-                    val stream = result.streams.streams.firstOrNull { it.kind == StreamKind.MUXED }
-                        ?: result.streams.streams.first()
-                    PlayerUiState.Ready(url = stream.url, title = title)
+                    val manifest = result.streams.manifest
+                    // A null manifest means the selection policy couldn't assemble any
+                    // valid delivery (no DASH/MUXED, and no video+audio pair to merge).
+                    if (manifest != null) PlayerUiState.Ready(manifest, title) else PlayerUiState.NotAvailable
                 }
 
                 StreamResult.NotAvailable -> PlayerUiState.NotAvailable
@@ -54,9 +57,8 @@ class PlayerViewModel(
 
     companion object {
         /**
-         * Composition root for the player: the only place that wires the concrete
-         * [NewPipeStreamProvider] adapter into the domain use case. When DI lands,
-         * this factory is the single seam that changes.
+         * Composition root for extraction: the only place that wires the
+         * concrete [NewPipeStreamProvider] adapter into the domain use case.
          */
         fun factory(videoId: String, title: String) = viewModelFactory {
             initializer {

@@ -52,6 +52,13 @@ dependencies {
     implementation(project(":data:extraction"))
     implementation(project(":core:ui"))
 
+    // Player destination (REQ-8..14): :app is the ONLY module that sees both
+    // the concrete adapters and the feature overlay — it wires them together
+    // (composition root, no DI framework — see PlaybackRoute/PlaybackViewModelFactory).
+    implementation(project(":data:player"))
+    implementation(project(":data:persistence"))
+    implementation(project(":feature:playback"))
+
     // Compose for TV
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.tv.material)
@@ -65,15 +72,16 @@ dependencies {
     // Navigation + ViewModel wiring for the container/presentational screens.
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+    // LocalLifecycleOwner for the player's ON_STOP/ON_PAUSE observer (REQ-13).
+    implementation(libs.androidx.lifecycle.runtime.compose)
 
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
 
-    // Playback engine — retained for the upcoming player destination.
+    // Extraction's ViewModel scope; the Media3 engine itself lives entirely
+    // behind :data:player now — :app never imports androidx.media3.* directly.
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.kotlinx.coroutines.android)
-    implementation(libs.media3.exoplayer)
-    implementation(libs.media3.ui)
 
     coreLibraryDesugaring(libs.desugar.jdk.libs.nio)
 }
