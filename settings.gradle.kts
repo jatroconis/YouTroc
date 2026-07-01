@@ -27,3 +27,6 @@ include(":core:domain")
 // Extraction adapter: also pure Kotlin/JVM (NewPipeExtractor is a Java library).
 // This is where the project's #1 risk lives; validated before any Android module.
 include(":data:extraction")
+
+// Android application: the Hito 0 walking skeleton that plays a stream on the TV.
+include(":app")
