@@ -62,7 +62,7 @@ object CatalogMetaFormatter {
     private fun abbreviate(count: Long): String = when {
         count >= BILLION -> "%.1f B".format(Locale.US, count / BILLION.toDouble())
         count >= MILLION -> "%.1f M".format(Locale.US, count / MILLION.toDouble())
-        count >= THOUSAND -> "%.1f K".format(Locale.US, count / THOUSAND.toDouble())
+        count >= THOUSAND -> "${count / THOUSAND} K"
         else -> count.toString()
     }
 }

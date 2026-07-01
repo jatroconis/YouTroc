@@ -16,8 +16,8 @@ class CatalogMetaFormatterTest {
     }
 
     @Test
-    fun `abbreviates thousands with one decimal`() {
-        assertEquals("532.0 K vistas", CatalogMetaFormatter.format(532_000L, null))
+    fun `abbreviates thousands without a decimal`() {
+        assertEquals("532 K vistas", CatalogMetaFormatter.format(532_000L, null))
     }
 
     @Test

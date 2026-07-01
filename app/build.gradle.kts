@@ -63,10 +63,6 @@ dependencies {
     // :app wires the concrete NewPipeVideoCatalog adapter into :feature:catalog's
     // HomeViewModel (see HomeViewModelFactory).
     implementation(project(":feature:catalog"))
-    // Only for ContentCountry (device-region "gl") construction in
-    // HomeViewModelFactory; :data:extraction's own NewPipe dependency is
-    // `implementation`-scoped and therefore not visible here transitively.
-    implementation(libs.newpipe.extractor)
 
     // Compose for TV
     implementation(platform(libs.androidx.compose.bom))

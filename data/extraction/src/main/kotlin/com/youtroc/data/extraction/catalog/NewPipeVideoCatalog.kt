@@ -19,9 +19,10 @@ import kotlin.coroutines.cancellation.CancellationException
  * It translates NewPipe's world into the domain's ubiquitous language and maps
  * every failure onto a typed [CatalogResult] — nothing throws across the port
  * boundary. The NewPipe types stay inside this class; they never leak into the
- * domain.
+ * domain — callers pass a plain [regionCode] string, never a NewPipe
+ * [ContentCountry], so [org.schabi.newpipe] stays confined to this module.
  *
- * Localization is forced per-call via [localization]/[contentCountry] on the
+ * Localization is forced per-call via [localization]/[regionCode] on the
  * kiosk extractor instance — [NewPipeBootstrap] and its global
  * [Localization.DEFAULT] are never mutated, so playback extraction
  * ([com.youtroc.data.extraction.NewPipeStreamProvider]) is unaffected.
@@ -29,7 +30,7 @@ import kotlin.coroutines.cancellation.CancellationException
 class NewPipeVideoCatalog(
     private val bootstrap: () -> Unit = NewPipeBootstrap::ensureInitialized,
     private val localization: Localization = Localization("es"),
-    private val contentCountry: ContentCountry? = null,
+    private val regionCode: String? = null,
 ) : VideoCatalog {
 
     override suspend fun trending(): CatalogResult = withContext(Dispatchers.IO) {
@@ -37,7 +38,8 @@ class NewPipeVideoCatalog(
         try {
             // YouTube's default kiosk IS "Trending" (no magic string needed).
             val extractor = ServiceList.YouTube.kioskList.getDefaultKioskExtractor(null, localization)
-            contentCountry?.let(extractor::forceContentCountry)
+            regionCode?.takeIf { it.isNotBlank() }
+                ?.let { extractor.forceContentCountry(ContentCountry(it)) }
             extractor.fetchPage()
             // KioskList is not generic; the kiosk item type is known statically for
             // YouTube's default kiosk (Trending), so a runtime filter (not a cast)
