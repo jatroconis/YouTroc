@@ -33,6 +33,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.focusGroup
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.onFocusChanged
@@ -98,6 +99,9 @@ fun HomeShell() {
                 }
 
                 LazyColumn(
+                    // A focus group so D-pad up/down stays inside the card grid
+                    // instead of leaking to the rail overlay on the left.
+                    modifier = Modifier.focusGroup(),
                     verticalArrangement = Arrangement.spacedBy(YouTrocDimens.shelfSpacing),
                     contentPadding = PaddingValues(bottom = YouTrocDimens.overscanVertical),
                 ) {
@@ -162,7 +166,8 @@ private fun NavRail(
         Column(
             modifier = Modifier
                 .fillMaxHeight()
-                .padding(vertical = YouTrocDimens.overscanVertical, horizontal = 10.dp),
+                .padding(vertical = YouTrocDimens.overscanVertical, horizontal = 10.dp)
+                .focusGroup(),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.height(44.dp)) {
