@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -51,8 +52,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.KeyEvent
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
@@ -67,11 +66,12 @@ import com.youtroc.core.domain.playback.PlaybackState
 import com.youtroc.core.ui.theme.OnDark
 import com.youtroc.core.ui.theme.OnDarkMuted
 import com.youtroc.core.ui.theme.YouTrocRed
+import com.youtroc.feature.playback.overlay.DpadAction
 import com.youtroc.feature.playback.overlay.OverlayReducer
 import com.youtroc.feature.playback.overlay.OverlayState
 import com.youtroc.feature.playback.overlay.PlaybackTimeFormatter
 import com.youtroc.feature.playback.overlay.SeekAmount
-import com.youtroc.feature.playback.overlay.SeekDirection
+import com.youtroc.feature.playback.overlay.decideDpadAction
 import kotlinx.coroutines.delay
 
 /**
@@ -81,7 +81,7 @@ import kotlinx.coroutines.delay
  * play-pause centered / next) with a PILLS row (like/dislike/CC/settings)
  * below it.
  *
- * D-pad L/R drives the reveal-then-seek gesture ([OverlayReducer]) while no
+ * D-pad L/R drives the reveal-then-seek gesture ([decideDpadAction]) while no
  * button in the control rows owns focus: the first press only reveals the
  * overlay, the next one seeks. Once the user moves focus into the rows
  * (DOWN, or CENTER/Enter), L/R falls through to Compose's normal per-row
@@ -89,13 +89,23 @@ import kotlinx.coroutines.delay
  * two rows — HomeShell's proven `focusGroup()` + `focusProperties` pattern —
  * so neither row traps focus.
  *
+ * Entering the controls (DOWN) defers the focus move to a
+ * `LaunchedEffect(visible, pendingEnterControls)` — HomeShell's proven
+ * pattern (MAJOR M2): the transport/pills rows only compose once [visible]
+ * flips to `true`, one frame AFTER the key event that revealed them, so
+ * calling `requestFocus()` inline during the event handler targets a node
+ * that isn't attached yet and silently throws (swallowed by `runCatching`).
+ * CENTER/Enter from Hidden skips focus entirely and calls [onPlayPause]
+ * directly (docs/07 §191: CENTER = play/pause), since there is no
+ * not-yet-composed button to focus.
+ *
  * Knows nothing about Media3 or the concrete engine — only the domain
  * [PlaybackState] snapshot and plain callbacks. Integration-only:
  * exercising real D-pad focus/timing needs a real TV input stack, so this is
  * validated on the TCL 55C6K rather than unit-tested — the same convention
  * already used for `Media3MediaPlayer`/`PlayerSurface`. The pure pieces it
- * delegates to ([OverlayReducer], [SeekAmount], [PlaybackTimeFormatter]) ARE
- * unit-tested.
+ * delegates to ([decideDpadAction], [OverlayReducer], [SeekAmount],
+ * [PlaybackTimeFormatter]) ARE unit-tested.
  */
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -114,19 +124,41 @@ fun PlayerOverlay(
 ) {
     var overlayState by remember { mutableStateOf<OverlayState>(OverlayState.Hidden) }
     var controlsFocused by remember { mutableStateOf(false) }
+    var lastActivityMs by remember { mutableLongStateOf(0L) }
+    var pendingEnterControls by remember { mutableStateOf(false) }
+    var longPressActive by remember { mutableStateOf(false) }
     val neutralFocus = remember { FocusRequester() }
     val transportFocus = remember { FocusRequester() }
     val pillsFocus = remember { FocusRequester() }
     val currentOnSeek by rememberUpdatedState(onSeek)
+    val currentOnPlayPause by rememberUpdatedState(onPlayPause)
 
     val visible = overlayState is OverlayState.Revealed
+
+    fun registerActivity(nowMs: Long = System.currentTimeMillis()) {
+        overlayState = OverlayReducer.onActivity(nowMs)
+        lastActivityMs = nowMs
+    }
 
     LaunchedEffect(Unit) {
         runCatching { neutralFocus.requestFocus() }
     }
 
-    // 4s auto-hide (REQ-11): ticks while revealed, hides once the timeout elapses.
-    LaunchedEffect(overlayState) {
+    // MAJOR M2: move focus into the transport row only AFTER it actually
+    // composes (this effect re-runs once `visible` flips to true), instead of
+    // requesting focus inline during the key-event handler.
+    LaunchedEffect(visible, pendingEnterControls) {
+        if (visible && pendingEnterControls) {
+            runCatching { transportFocus.requestFocus() }
+            pendingEnterControls = false
+        }
+    }
+
+    // 4s auto-hide (REQ-11), reset by ANY control activity (MAJOR M4) — not
+    // just the key event that first revealed the overlay. Keyed on
+    // [lastActivityMs] rather than [overlayState] so in-row focus movement
+    // and button clicks (which call [registerActivity]) restart the timer.
+    LaunchedEffect(lastActivityMs) {
         val revealed = overlayState as? OverlayState.Revealed ?: return@LaunchedEffect
         delay(OverlayReducer.AUTO_HIDE_TIMEOUT_MS)
         val next = OverlayReducer.onInactivityTimeout(revealed, nowMs = revealed.sinceMs + OverlayReducer.AUTO_HIDE_TIMEOUT_MS)
@@ -147,14 +179,55 @@ fun PlayerOverlay(
         modifier = modifier
             .fillMaxSize()
             .onPreviewKeyEvent { keyEvent ->
-                handleDPadKeyEvent(
-                    keyEvent = keyEvent,
+                val repeatCount = keyEvent.nativeKeyEvent.repeatCount
+                // MAJOR M3: Android's KeyUp.repeatCount is ALWAYS 0, so the
+                // held-vs-tap distinction must be tracked ourselves across
+                // the KeyDown/KeyUp pair — reset at the start of a fresh press.
+                if (keyEvent.type == KeyEventType.KeyDown && repeatCount == 0) {
+                    longPressActive = false
+                }
+
+                val action = decideDpadAction(
+                    key = keyEvent.key,
+                    type = keyEvent.type,
+                    repeatCount = repeatCount,
+                    longPressActive = longPressActive,
                     controlsFocused = controlsFocused,
                     overlayState = overlayState,
-                    onOverlayStateChange = { overlayState = it },
-                    onEnterControls = { runCatching { transportFocus.requestFocus() } },
-                    onSeek = currentOnSeek,
                 )
+
+                if (keyEvent.type == KeyEventType.KeyDown && action is DpadAction.Seek) {
+                    longPressActive = true
+                } else if (keyEvent.type == KeyEventType.KeyUp && longPressActive) {
+                    longPressActive = false
+                }
+
+                when (action) {
+                    DpadAction.Ignore -> false
+
+                    DpadAction.Reveal -> {
+                        registerActivity()
+                        true
+                    }
+
+                    is DpadAction.Seek -> {
+                        currentOnSeek(action.deltaMs)
+                        registerActivity()
+                        true
+                    }
+
+                    DpadAction.EnterControls -> {
+                        registerActivity()
+                        pendingEnterControls = true
+                        true
+                    }
+
+                    DpadAction.PlayPause -> {
+                        currentOnPlayPause()
+                        registerActivity()
+                        true
+                    }
+                }
             },
     ) {
         // Invisible: only exists so a D-pad key event has somewhere to land
@@ -176,7 +249,11 @@ fun PlayerOverlay(
                         Brush.verticalGradient(0.0f to Color.Transparent, 1.0f to Color.Black.copy(alpha = 0.75f)),
                     )
                     .padding(horizontal = 40.dp, vertical = 24.dp)
-                    .onFocusChanged { controlsFocused = it.hasFocus },
+                    .onFocusChanged {
+                        controlsFocused = it.hasFocus
+                        // MAJOR M4: entering the control rows also counts as activity.
+                        if (it.hasFocus) registerActivity()
+                    },
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Scrubber(positionMs = playbackState.positionMs, durationMs = playbackState.durationMs)
@@ -185,90 +262,23 @@ fun PlayerOverlay(
                     isPlaying = playbackState.isPlaying,
                     focusRequester = transportFocus,
                     downFocus = pillsFocus,
-                    onPrevious = onPrevious,
-                    onPlayPause = onPlayPause,
-                    onNext = onNext,
+                    onPrevious = { registerActivity(); onPrevious() },
+                    onPlayPause = { registerActivity(); onPlayPause() },
+                    onNext = { registerActivity(); onNext() },
                 )
 
                 PillsRow(
                     focusRequester = pillsFocus,
                     upFocus = transportFocus,
-                    onLike = onLike,
-                    onDislike = onDislike,
-                    onCaptions = onCaptions,
-                    onSettings = onSettings,
+                    onLike = { registerActivity(); onLike() },
+                    onDislike = { registerActivity(); onDislike() },
+                    onCaptions = { registerActivity(); onCaptions() },
+                    onSettings = { registerActivity(); onSettings() },
                 )
             }
         }
     }
 }
-
-/**
- * D-pad L/R here is a global reveal-then-seek gesture, not per-row button
- * navigation (docs/07 §10: "1er L/R revela overlay, 2do hace seek"). It only
- * fires while [controlsFocused] is false; once focus is on an actual
- * transport/pills button, this returns `false` and Compose's default
- * per-row arrow-key focus search takes over instead.
- *
- * Reacts on `KeyUp` for a clean single tap (avoids the double-dispatch bug
- * `handleDPadKeyEvents` documents), but watches `KeyDown` repeats too so a
- * long-press engages a continuous, accelerating fast-seek ([SeekAmount])
- * instead of a single 10s step.
- */
-private fun handleDPadKeyEvent(
-    keyEvent: KeyEvent,
-    controlsFocused: Boolean,
-    overlayState: OverlayState,
-    onOverlayStateChange: (OverlayState) -> Unit,
-    onEnterControls: () -> Unit,
-    onSeek: (Long) -> Unit,
-): Boolean {
-    val direction = when (keyEvent.key) {
-        Key.DirectionLeft -> SeekDirection.Backward
-        Key.DirectionRight -> SeekDirection.Forward
-        else -> null
-    }
-
-    if (direction != null && !controlsFocused) {
-        val repeatCount = keyEvent.nativeKeyEvent.repeatCount
-        return when (keyEvent.type) {
-            KeyEventType.KeyDown -> {
-                if (repeatCount > 0 && overlayState is OverlayState.Revealed) {
-                    onSeek(signedAmount(direction, SeekAmount.forPress(repeatCount)))
-                    onOverlayStateChange(OverlayReducer.onActivity(nowMs = System.currentTimeMillis()))
-                    true
-                } else {
-                    false // let KeyUp below dispatch a clean single press
-                }
-            }
-
-            KeyEventType.KeyUp -> {
-                if (repeatCount > 0) {
-                    true // long-press ticks already handled on KeyDown; swallow the release
-                } else {
-                    val transition = OverlayReducer.onDirectionalKey(overlayState, direction, System.currentTimeMillis())
-                    onOverlayStateChange(transition.nextState)
-                    transition.seek?.let { onSeek(signedAmount(it, SeekAmount.SINGLE_STEP_MS)) }
-                    true
-                }
-            }
-
-            else -> false
-        }
-    }
-
-    val entersControls = keyEvent.key == Key.DirectionDown || keyEvent.key == Key.DirectionCenter || keyEvent.key == Key.Enter
-    if (keyEvent.type == KeyEventType.KeyUp && entersControls && !controlsFocused && overlayState is OverlayState.Hidden) {
-        onOverlayStateChange(OverlayReducer.onActivity(nowMs = System.currentTimeMillis()))
-        onEnterControls()
-        return true
-    }
-
-    return false
-}
-
-private fun signedAmount(direction: SeekDirection, amountMs: Long): Long =
-    if (direction == SeekDirection.Backward) -amountMs else amountMs
 
 @Composable
 private fun TitleLabel(title: String, modifier: Modifier = Modifier) {

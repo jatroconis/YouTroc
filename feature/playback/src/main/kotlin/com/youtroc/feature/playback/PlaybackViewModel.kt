@@ -9,6 +9,7 @@ import com.youtroc.core.domain.playback.PlaybackState
 import com.youtroc.core.domain.playback.ResumeDecision
 import com.youtroc.core.domain.playback.WatchProgressStore
 import com.youtroc.core.domain.video.VideoId
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
@@ -26,11 +27,26 @@ import kotlinx.coroutines.launch
  *   this single method backs both REQ-13 (pause on `ON_STOP`/`ON_PAUSE`) and
  *   REQ-12 (position saved when the user leaves before the video ends);
  *   design's lifecycle judgment call wires a `LifecycleEventObserver` to it.
+ * - [appScope] backs progress persistence (BLOCKER B1): `viewModelScope` is
+ *   cancelled the moment this entry's `ViewModelStore` clears — e.g. BACK
+ *   popping the destination — which can happen BEFORE an in-flight
+ *   `WatchProgressStore.save()` suspend write commits, silently losing the
+ *   position. [appScope] is owned by the composition root's `Application`
+ *   (outlives any single NavBackStackEntry), so the save launched from
+ *   [pause]/[onCleared] survives the teardown that cancels `viewModelScope`.
+ * - [player] is exposed publicly (not just as a constructor dependency) so
+ *   the composition root can read back the SAME instance for rendering
+ *   (MAJOR M1): see `PlaybackRoute`, which builds this player inside the
+ *   ViewModel factory's `initializer` (entry-scoped) instead of a
+ *   composition-scoped `remember`, so it survives Activity recreation
+ *   alongside this ViewModel instead of being torn down and rebuilt on every
+ *   recomposition while the retained ViewModel keeps driving the old one.
  */
 class PlaybackViewModel(
-    private val player: MediaPlayer,
+    val player: MediaPlayer,
     private val watchProgressStore: WatchProgressStore,
     private val videoId: VideoId,
+    private val appScope: CoroutineScope,
 ) : ViewModel() {
 
     val playbackState: StateFlow<PlaybackState> = player.state
@@ -72,14 +88,27 @@ class PlaybackViewModel(
         persistProgress()
     }
 
-    /** Releases the underlying engine — called when the surface leaves composition (REQ-6). */
-    fun releasePlayer() {
+    /**
+     * Releases the engine and does a final persist (BLOCKER B1 + MAJOR M1).
+     * The framework invokes this ONLY when this entry's `ViewModelStore`
+     * actually clears (BACK popping the destination) — NOT on every
+     * composition disposal, which is what made the composable's own
+     * `onDispose` an unreliable place to release the player across Activity
+     * recreation (M1).
+     */
+    public override fun onCleared() {
+        persistProgress()
         player.release()
     }
 
+    /**
+     * Persists via [appScope] (BLOCKER B1) — NOT `viewModelScope`, which may
+     * already be cancelled (or about to be, mid-write) by the time this
+     * entry's `ViewModelStore` clears.
+     */
     private fun persistProgress() {
         val state = playbackState.value
-        viewModelScope.launch {
+        appScope.launch {
             watchProgressStore.save(videoId, PlaybackPosition(state.positionMs), state.durationMs)
         }
     }

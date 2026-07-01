@@ -3,8 +3,13 @@ package com.youtroc.feature.playback
 import com.youtroc.core.domain.playback.PlaybackManifest
 import com.youtroc.core.domain.playback.PlaybackPosition
 import com.youtroc.core.domain.video.VideoId
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -14,6 +19,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
@@ -30,13 +36,22 @@ class PlaybackViewModelTest {
         adaptive = false,
     )
 
+    /**
+     * Reused by tests that don't care about scope-survival timing — an
+     * Unconfined scope behaves like a plain synchronous call, same as the
+     * (deliberately eager) `Dispatchers.Main` set below.
+     */
+    private lateinit var appScope: CoroutineScope
+
     @BeforeTest
     fun setUp() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
+        appScope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
     }
 
     @AfterTest
     fun tearDown() {
+        appScope.cancel()
         Dispatchers.resetMain()
     }
 
@@ -44,7 +59,7 @@ class PlaybackViewModelTest {
     fun `plays from zero when nothing was saved`() = runTest {
         val player = FakeMediaPlayer()
         val store = FakeWatchProgressStore()
-        val viewModel = PlaybackViewModel(player, store, videoId)
+        val viewModel = PlaybackViewModel(player, store, videoId, appScope)
 
         viewModel.start(manifest)
         player.emitReady(durationMs = 200_000L)
@@ -58,7 +73,7 @@ class PlaybackViewModelTest {
         val player = FakeMediaPlayer()
         val store = FakeWatchProgressStore()
         store.save(videoId, PlaybackPosition(50_000L), durationMs = 200_000L)
-        val viewModel = PlaybackViewModel(player, store, videoId)
+        val viewModel = PlaybackViewModel(player, store, videoId, appScope)
 
         viewModel.start(manifest)
         player.emitReady(durationMs = 200_000L)
@@ -71,7 +86,7 @@ class PlaybackViewModelTest {
         val player = FakeMediaPlayer()
         val store = FakeWatchProgressStore()
         store.save(videoId, PlaybackPosition(9_000L), durationMs = 200_000L) // under the 10s floor
-        val viewModel = PlaybackViewModel(player, store, videoId)
+        val viewModel = PlaybackViewModel(player, store, videoId, appScope)
 
         viewModel.start(manifest)
         player.emitReady(durationMs = 200_000L)
@@ -84,7 +99,7 @@ class PlaybackViewModelTest {
         val player = FakeMediaPlayer()
         val store = FakeWatchProgressStore()
         store.save(videoId, PlaybackPosition(50_000L), durationMs = 200_000L)
-        val viewModel = PlaybackViewModel(player, store, videoId)
+        val viewModel = PlaybackViewModel(player, store, videoId, appScope)
 
         viewModel.start(manifest)
         player.emitReady(durationMs = 200_000L)
@@ -97,7 +112,7 @@ class PlaybackViewModelTest {
     fun `pause pauses the player and persists the current position`() = runTest {
         val player = FakeMediaPlayer()
         val store = FakeWatchProgressStore()
-        val viewModel = PlaybackViewModel(player, store, videoId)
+        val viewModel = PlaybackViewModel(player, store, videoId, appScope)
         viewModel.start(manifest)
         player.emitReady(durationMs = 200_000L, positionMs = 42_000L)
 
@@ -111,7 +126,7 @@ class PlaybackViewModelTest {
     fun `seekBy clamps within the video bounds`() = runTest {
         val player = FakeMediaPlayer()
         val store = FakeWatchProgressStore()
-        val viewModel = PlaybackViewModel(player, store, videoId)
+        val viewModel = PlaybackViewModel(player, store, videoId, appScope)
         viewModel.start(manifest)
         player.emitReady(durationMs = 200_000L, positionMs = 5_000L)
 
@@ -124,12 +139,69 @@ class PlaybackViewModelTest {
     fun `togglePlayPause pauses a playing video and persists position`() = runTest {
         val player = FakeMediaPlayer()
         val store = FakeWatchProgressStore()
-        val viewModel = PlaybackViewModel(player, store, videoId)
+        val viewModel = PlaybackViewModel(player, store, videoId, appScope)
         viewModel.start(manifest)
         player.emitReady(durationMs = 200_000L)
 
         viewModel.togglePlayPause()
 
         assertFalse(player.isPlaying)
+    }
+
+    /**
+     * BLOCKER B1 regression test: `pause()`'s persist MUST be scheduled on
+     * the injected [PlaybackViewModel.appScope] (its own dedicated dispatcher
+     * here), NOT on `viewModelScope` (which runs on the Unconfined `Main` set
+     * in [setUp] and would therefore complete the save SYNCHRONOUSLY, before
+     * this assertion, if it were still used). We prove the save is merely
+     * QUEUED on the app scope's own scheduler right after [PlaybackViewModel.pause]
+     * returns, then flush ONLY that scheduler and observe it land.
+     */
+    @Test
+    fun `pause persists progress on the injected app scope, not viewModelScope`() = runTest {
+        val player = FakeMediaPlayer()
+        val store = FakeWatchProgressStore()
+        val appScheduler = TestCoroutineScheduler()
+        val survivingScope = CoroutineScope(SupervisorJob() + StandardTestDispatcher(appScheduler))
+        val viewModel = PlaybackViewModel(player, store, videoId, survivingScope)
+        viewModel.start(manifest)
+        player.emitReady(durationMs = 200_000L, positionMs = 42_000L)
+
+        viewModel.pause()
+
+        // Not flushed yet: proves the write is scheduled on the app scope's
+        // OWN (not-yet-advanced) scheduler, decoupled from viewModelScope's
+        // eager Unconfined Main dispatcher.
+        assertNull(store.load(videoId))
+
+        appScheduler.advanceUntilIdle()
+
+        assertEquals(PlaybackPosition(42_000L), store.load(videoId))
+    }
+
+    /**
+     * BLOCKER B1 + MAJOR M1 regression test: `onCleared()` (invoked by the
+     * framework when the NavBackStackEntry's ViewModelStore actually clears,
+     * e.g. BACK) MUST release the player (REQ-6, M1) AND persist the final
+     * position via the surviving app scope (B1) rather than losing it.
+     */
+    @Test
+    fun `onCleared releases the player and persists progress via the surviving app scope`() = runTest {
+        val player = FakeMediaPlayer()
+        val store = FakeWatchProgressStore()
+        val appScheduler = TestCoroutineScheduler()
+        val survivingScope = CoroutineScope(SupervisorJob() + StandardTestDispatcher(appScheduler))
+        val viewModel = PlaybackViewModel(player, store, videoId, survivingScope)
+        viewModel.start(manifest)
+        player.emitReady(durationMs = 200_000L, positionMs = 77_000L)
+
+        viewModel.onCleared()
+
+        assertTrue(player.released)
+        assertNull(store.load(videoId)) // queued on the app scope, not yet flushed
+
+        appScheduler.advanceUntilIdle()
+
+        assertEquals(PlaybackPosition(77_000L), store.load(videoId))
     }
 }
