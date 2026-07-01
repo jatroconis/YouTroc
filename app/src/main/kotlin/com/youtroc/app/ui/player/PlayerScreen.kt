@@ -40,9 +40,12 @@ import com.youtroc.core.ui.theme.YouTrocRed
  * `:data:persistence` adapters and the `:feature:playback` overlay together.
  *
  * [title] (the nav-arg title, MAJOR M5) is rendered as a persistent top-left
- * label ABOVE the `when(state)` dispatch, so it is drawn immediately in every
- * state — including `Loading`, before extraction (and therefore [PlaybackRoute]'s
- * own overlay title) exists at all — instead of only once `Ready`.
+ * label for every NON-`Ready` state — `Loading`/`NotAvailable`/`Offline`/`Failed`
+ * — so it is drawn immediately, before extraction (and therefore
+ * [PlaybackRoute]) exists at all, instead of only once `Ready`. In `Ready`,
+ * [PlaybackRoute] -> `PlayerOverlay` (`:feature:playback`) renders its OWN
+ * always-on title, so this label is skipped there (MINOR fix #2) — rendering
+ * both at once double-drew the same title stacked on top of itself.
  *
  * BACK always pops to Home (REQ-5) from every state. [PlaybackRoute]'s
  * overlay collapses itself first while visible (its own `BackHandler` is
@@ -104,17 +107,23 @@ fun PlayerScreen(
             )
         }
 
-        TitleLabel(title = title, modifier = Modifier.align(Alignment.TopStart))
+        // MINOR fix #2: skip this label in Ready — PlaybackRoute's PlayerOverlay
+        // already renders its own always-on title there; rendering both
+        // double-drew the title stacked on top of itself.
+        if (state !is PlayerUiState.Ready) {
+            TitleLabel(title = title, modifier = Modifier.align(Alignment.TopStart))
+        }
     }
 }
 
 /**
  * Persistent top-left title label (REQ-14, MAJOR M5) — drawn from the nav-arg
- * title regardless of [PlayerUiState], so it never waits on extraction. Local
- * duplicate of `:feature:playback`'s private `TitleLabel` (same convention as
+ * title for every non-`Ready` [PlayerUiState] (call site above skips it in
+ * `Ready`, MINOR fix #2), so it never waits on extraction. Local duplicate of
+ * `:feature:playback`'s private `TitleLabel` (same convention as
  * [StatusSpinner] below): that composable is private to the feature module
  * and only exists once [PlaybackRoute] composes (`Ready`), which is exactly
- * the gap this fixes.
+ * the gap the non-`Ready` rendering fixes.
  */
 @Composable
 private fun TitleLabel(title: String, modifier: Modifier = Modifier) {
