@@ -7,11 +7,14 @@ import androidx.compose.ui.unit.dp
  * app on the target device (1920x1080 @ 320dpi → 2px = 1dp).
  */
 object YouTrocDimens {
+    /** Width of the collapsed (icons-only) nav rail column. */
+    val railWidth = 64.dp
+
     /**
-     * Left inset for content so it clears the collapsed nav rail with a gap.
-     * YouTube's rail ends ~50dp and its content starts ~76dp (a ~26dp gutter).
+     * Content gutter inside the area to the right of the rail. Combined with
+     * [railWidth] this lands cards at ~80dp from the screen edge (YouTube ~76dp).
      */
-    val railContentStart = 76.dp
+    val railContentStart = 16.dp
 
     /** Overscan-safe margin for the right/end edge and top/bottom. */
     val overscanHorizontal = 58.dp

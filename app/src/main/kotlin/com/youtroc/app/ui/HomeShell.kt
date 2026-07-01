@@ -1,6 +1,6 @@
 package com.youtroc.app.ui
 
-import androidx.compose.foundation.background
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Home
@@ -25,59 +26,62 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-import androidx.tv.material3.DrawerValue
+import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.Icon
-import androidx.tv.material3.MaterialTheme
-import androidx.tv.material3.ModalNavigationDrawer
-import androidx.tv.material3.NavigationDrawerItem
-import androidx.tv.material3.NavigationDrawerScope
 import androidx.tv.material3.Surface
-import androidx.tv.material3.Text
-import androidx.tv.material3.rememberDrawerState
 import com.youtroc.core.ui.component.ShelfRow
 import com.youtroc.core.ui.component.VideoCardUi
 import com.youtroc.core.ui.component.YouTrocLogo
+import com.youtroc.core.ui.theme.AlmostBlack
+import com.youtroc.core.ui.theme.ElevatedSurface
 import com.youtroc.core.ui.theme.OnDark
 import com.youtroc.core.ui.theme.OnDarkMuted
 import com.youtroc.core.ui.theme.YouTrocDimens
 
 /**
- * Home shell: the collapsible nav rail (avatar + Search / Home / Settings, expanding
- * on focus) over a header (YouTroc brandmark) and a stack of shelves with real
- * thumbnails. Data is still fabricated from real video ids; the catalog ViewModel
- * replaces the fake source next, without touching these presentational pieces.
+ * Home shell: a custom nav rail beside the content, laid out as a plain [Row] so
+ * D-pad focus moves freely left/right between the rail and the cards (no modal
+ * drawer that traps focus). Focus starts on the first card; BACK from the rail
+ * returns to the content instead of leaving the app.
  */
 @Composable
 fun HomeShell() {
     val shelves = remember { fakeShelves() }
     var selectedIndex by remember { mutableIntStateOf(1) } // Home
-    val drawerState = rememberDrawerState(DrawerValue.Closed)
     val firstCardFocus = remember { FocusRequester() }
+    var railFocused by remember { mutableStateOf(false) }
 
-    // Start on the content (first card), not trapped in the rail. The rail is one
-    // D-pad press LEFT away, and content stays reachable with RIGHT.
     LaunchedEffect(Unit) {
         runCatching { firstCardFocus.requestFocus() }
     }
+    // While the rail holds focus, BACK returns to the content rather than exiting.
+    BackHandler(enabled = railFocused) {
+        runCatching { firstCardFocus.requestFocus() }
+    }
 
-    ModalNavigationDrawer(
-        drawerState = drawerState,
-        drawerContent = { drawerValue ->
+    Surface(modifier = Modifier.fillMaxSize()) {
+        Row(modifier = Modifier.fillMaxSize()) {
             NavRail(
-                open = drawerValue == DrawerValue.Open,
                 selectedIndex = selectedIndex,
                 onSelect = { selectedIndex = it },
+                modifier = Modifier.onFocusChanged { railFocused = it.hasFocus },
             )
-        },
-    ) {
-        Surface(modifier = Modifier.fillMaxSize()) {
-            Column(modifier = Modifier.fillMaxSize()) {
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight(),
+            ) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -110,8 +114,7 @@ fun HomeShell() {
 }
 
 @Composable
-private fun NavigationDrawerScope.NavRail(
-    open: Boolean,
+private fun NavRail(
     selectedIndex: Int,
     onSelect: (Int) -> Unit,
     modifier: Modifier = Modifier,
@@ -119,51 +122,49 @@ private fun NavigationDrawerScope.NavRail(
     Column(
         modifier = modifier
             .fillMaxHeight()
-            .padding(12.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+            .width(YouTrocDimens.railWidth)
+            .padding(vertical = YouTrocDimens.overscanVertical),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        ProfileAvatar(open = open)
-        Spacer(Modifier.height(12.dp))
-
-        NavigationDrawerItem(
-            selected = selectedIndex == 0,
-            onClick = { onSelect(0) },
-            leadingContent = { Icon(Icons.Default.Search, contentDescription = "Buscar") },
-        ) { Text("Buscar") }
-
-        NavigationDrawerItem(
-            selected = selectedIndex == 1,
-            onClick = { onSelect(1) },
-            leadingContent = { Icon(Icons.Default.Home, contentDescription = "Inicio") },
-        ) { Text("Inicio") }
-
-        Spacer(Modifier.weight(1f))
-
-        NavigationDrawerItem(
-            selected = selectedIndex == 2,
-            onClick = { onSelect(2) },
-            leadingContent = { Icon(Icons.Default.Settings, contentDescription = "Ajustes") },
-        ) { Text("Ajustes") }
-    }
-}
-
-@Composable
-private fun ProfileAvatar(open: Boolean) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
         Icon(
             imageVector = Icons.Default.AccountCircle,
             contentDescription = "Cuenta",
             tint = OnDarkMuted,
             modifier = Modifier.size(36.dp),
         )
-        if (open) {
-            Spacer(Modifier.width(10.dp))
-            Text(
-                text = "Invitado",
-                color = OnDark,
-                style = MaterialTheme.typography.titleSmall,
-                maxLines = 1,
-            )
+        Spacer(Modifier.height(16.dp))
+
+        RailIcon(Icons.Default.Search, "Buscar", selectedIndex == 0) { onSelect(0) }
+        RailIcon(Icons.Default.Home, "Inicio", selectedIndex == 1) { onSelect(1) }
+
+        Spacer(Modifier.weight(1f))
+
+        RailIcon(Icons.Default.Settings, "Ajustes", selectedIndex == 2) { onSelect(2) }
+    }
+}
+
+@Composable
+private fun RailIcon(
+    icon: ImageVector,
+    contentDescription: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    Surface(
+        onClick = onClick,
+        shape = ClickableSurfaceDefaults.shape(CircleShape),
+        scale = ClickableSurfaceDefaults.scale(focusedScale = 1.1f),
+        colors = ClickableSurfaceDefaults.colors(
+            containerColor = if (selected) ElevatedSurface else Color.Transparent,
+            focusedContainerColor = OnDark,
+            contentColor = OnDark,
+            focusedContentColor = AlmostBlack,
+        ),
+        modifier = Modifier.size(44.dp),
+    ) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Icon(imageVector = icon, contentDescription = contentDescription)
         }
     }
 }
