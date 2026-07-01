@@ -35,5 +35,9 @@ include(":data:extraction")
 // Android library — never depends on :data:extraction (no NewPipe types here).
 include(":data:player")
 
+// Persistence adapter: implements the domain WatchProgressStore port over
+// DataStore Preferences. Android library — local-only, depends on :core:domain only.
+include(":data:persistence")
+
 // Android application: the Hito 0 walking skeleton that plays a stream on the TV.
 include(":app")
