@@ -39,5 +39,10 @@ include(":data:player")
 // DataStore Preferences. Android library — local-only, depends on :core:domain only.
 include(":data:persistence")
 
+// Player feature: the custom Compose-for-TV overlay + player ViewModel.
+// Depends only on :core:domain (+ :core:ui for theme/tokens) — NEVER on
+// :data:player/:data:extraction, so it only ever talks to the domain ports.
+include(":feature:playback")
+
 // Android application: the Hito 0 walking skeleton that plays a stream on the TV.
 include(":app")
