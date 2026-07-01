@@ -1,6 +1,8 @@
 package com.youtroc.app.ui
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,13 +34,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.Icon
+import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
+import androidx.tv.material3.Text
 import com.youtroc.core.ui.component.ShelfRow
 import com.youtroc.core.ui.component.VideoCardUi
 import com.youtroc.core.ui.component.YouTrocLogo
@@ -48,11 +54,13 @@ import com.youtroc.core.ui.theme.OnDark
 import com.youtroc.core.ui.theme.OnDarkMuted
 import com.youtroc.core.ui.theme.YouTrocDimens
 
+private val RailExpandedWidth = 240.dp
+
 /**
- * Home shell: a custom nav rail beside the content, laid out as a plain [Row] so
- * D-pad focus moves freely left/right between the rail and the cards (no modal
- * drawer that traps focus). Focus starts on the first card; BACK from the rail
- * returns to the content instead of leaving the app.
+ * Home shell. The nav rail is an OVERLAY over the content (content stays put), and
+ * it expands on focus to reveal labels. Crucially, only the 44dp icon is focusable;
+ * the label overflows beside it as decoration, so a D-pad RIGHT always finds the
+ * content to the right — the rail expands like YouTube's without trapping focus.
  */
 @Composable
 fun HomeShell() {
@@ -64,23 +72,17 @@ fun HomeShell() {
     LaunchedEffect(Unit) {
         runCatching { firstCardFocus.requestFocus() }
     }
-    // While the rail holds focus, BACK returns to the content rather than exiting.
     BackHandler(enabled = railFocused) {
         runCatching { firstCardFocus.requestFocus() }
     }
 
     Surface(modifier = Modifier.fillMaxSize()) {
-        Row(modifier = Modifier.fillMaxSize()) {
-            NavRail(
-                selectedIndex = selectedIndex,
-                onSelect = { selectedIndex = it },
-                modifier = Modifier.onFocusChanged { railFocused = it.hasFocus },
-            )
-
+        Box(modifier = Modifier.fillMaxSize()) {
+            // Content — inset so it clears the collapsed rail; it never reflows.
             Column(
                 modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight(),
+                    .fillMaxSize()
+                    .padding(start = YouTrocDimens.railWidth),
             ) {
                 Box(
                     modifier = Modifier
@@ -109,62 +111,123 @@ fun HomeShell() {
                     }
                 }
             }
+
+            // Rail overlay — expands on focus.
+            NavRail(
+                railFocused = railFocused,
+                selectedIndex = selectedIndex,
+                onSelect = { selectedIndex = it },
+                contentFocus = firstCardFocus,
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .onFocusChanged { railFocused = it.hasFocus },
+            )
         }
     }
 }
 
 @Composable
 private fun NavRail(
+    railFocused: Boolean,
     selectedIndex: Int,
     onSelect: (Int) -> Unit,
+    contentFocus: FocusRequester,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxHeight()
-            .width(YouTrocDimens.railWidth)
-            .padding(vertical = YouTrocDimens.overscanVertical),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        Icon(
-            imageVector = Icons.Default.AccountCircle,
-            contentDescription = "Cuenta",
-            tint = OnDarkMuted,
-            modifier = Modifier.size(36.dp),
+    val panelWidth by animateDpAsState(
+        targetValue = if (railFocused) RailExpandedWidth else YouTrocDimens.railWidth,
+        label = "railPanelWidth",
+    )
+    val background = if (railFocused) {
+        Modifier.background(
+            Brush.horizontalGradient(
+                0.0f to AlmostBlack,
+                0.6f to AlmostBlack,
+                1.0f to Color.Transparent,
+            ),
         )
-        Spacer(Modifier.height(16.dp))
+    } else {
+        Modifier
+    }
 
-        RailIcon(Icons.Default.Search, "Buscar", selectedIndex == 0) { onSelect(0) }
-        RailIcon(Icons.Default.Home, "Inicio", selectedIndex == 1) { onSelect(1) }
+    Box(
+        modifier = modifier
+            .width(panelWidth)
+            .then(background),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxHeight()
+                .padding(vertical = YouTrocDimens.overscanVertical, horizontal = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.height(44.dp)) {
+                Icon(
+                    imageVector = Icons.Default.AccountCircle,
+                    contentDescription = "Cuenta",
+                    tint = OnDarkMuted,
+                    modifier = Modifier.size(36.dp),
+                )
+                if (railFocused) {
+                    Spacer(Modifier.width(16.dp))
+                    Text(
+                        text = "Invitado",
+                        color = OnDark,
+                        style = MaterialTheme.typography.titleSmall,
+                        maxLines = 1,
+                    )
+                }
+            }
+            Spacer(Modifier.height(16.dp))
 
-        Spacer(Modifier.weight(1f))
+            RailItem(Icons.Default.Search, "Buscar", selectedIndex == 0, railFocused, contentFocus) { onSelect(0) }
+            RailItem(Icons.Default.Home, "Inicio", selectedIndex == 1, railFocused, contentFocus) { onSelect(1) }
 
-        RailIcon(Icons.Default.Settings, "Ajustes", selectedIndex == 2) { onSelect(2) }
+            Spacer(Modifier.weight(1f))
+
+            RailItem(Icons.Default.Settings, "Ajustes", selectedIndex == 2, railFocused, contentFocus) { onSelect(2) }
+        }
     }
 }
 
 @Composable
-private fun RailIcon(
+private fun RailItem(
     icon: ImageVector,
-    contentDescription: String,
+    label: String,
     selected: Boolean,
+    expanded: Boolean,
+    rightFocus: FocusRequester,
     onClick: () -> Unit,
 ) {
-    Surface(
-        onClick = onClick,
-        shape = ClickableSurfaceDefaults.shape(CircleShape),
-        scale = ClickableSurfaceDefaults.scale(focusedScale = 1.1f),
-        colors = ClickableSurfaceDefaults.colors(
-            containerColor = if (selected) ElevatedSurface else Color.Transparent,
-            focusedContainerColor = OnDark,
-            contentColor = OnDark,
-            focusedContentColor = AlmostBlack,
-        ),
-        modifier = Modifier.size(44.dp),
-    ) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Icon(imageVector = icon, contentDescription = contentDescription)
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        // ONLY this 44dp surface is focusable, and RIGHT is wired explicitly to the
+        // content so the overlay geometry can never trap focus in the rail.
+        Surface(
+            onClick = onClick,
+            shape = ClickableSurfaceDefaults.shape(CircleShape),
+            scale = ClickableSurfaceDefaults.scale(focusedScale = 1.1f),
+            colors = ClickableSurfaceDefaults.colors(
+                containerColor = if (selected) ElevatedSurface else Color.Transparent,
+                focusedContainerColor = OnDark,
+                contentColor = OnDark,
+                focusedContentColor = AlmostBlack,
+            ),
+            modifier = Modifier
+                .size(44.dp)
+                .focusProperties { right = rightFocus },
+        ) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Icon(imageVector = icon, contentDescription = label)
+            }
+        }
+        if (expanded) {
+            Spacer(Modifier.width(16.dp))
+            Text(
+                text = label,
+                color = if (selected) OnDark else OnDarkMuted,
+                style = MaterialTheme.typography.titleSmall,
+                maxLines = 1,
+            )
         }
     }
 }
