@@ -44,5 +44,10 @@ include(":data:persistence")
 // :data:player/:data:extraction, so it only ever talks to the domain ports.
 include(":feature:playback")
 
+// Catalog feature: the Home trending shelf's container (HomeViewModel) +
+// presentational content. Depends only on :core:domain (+ :core:ui) — NEVER
+// on :data:extraction, so it only ever talks to the domain ports.
+include(":feature:catalog")
+
 // Android application: the Hito 0 walking skeleton that plays a stream on the TV.
 include(":app")

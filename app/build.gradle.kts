@@ -59,6 +59,15 @@ dependencies {
     implementation(project(":data:persistence"))
     implementation(project(":feature:playback"))
 
+    // Catalog destination (RF-CAT-01..06): same composition-root pattern —
+    // :app wires the concrete NewPipeVideoCatalog adapter into :feature:catalog's
+    // HomeViewModel (see HomeViewModelFactory).
+    implementation(project(":feature:catalog"))
+    // Only for ContentCountry (device-region "gl") construction in
+    // HomeViewModelFactory; :data:extraction's own NewPipe dependency is
+    // `implementation`-scoped and therefore not visible here transitively.
+    implementation(libs.newpipe.extractor)
+
     // Compose for TV
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.tv.material)
