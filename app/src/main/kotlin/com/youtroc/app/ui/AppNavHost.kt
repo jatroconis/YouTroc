@@ -22,10 +22,13 @@ import com.youtroc.app.ui.search.SearchRoute
  * (URL-encoded) so each screen can show it immediately, before extraction
  * resolves.
  *
- * Card confirms (Home, Search) route to detail, NOT the player directly
- * (RF-CAT-04/RF-SRCH-03, reconciled by video-detail spec #4417) — the flow
- * is card→detail→(Reproducir)→player, and detail's own related shelf
- * recurses back into `detail/{relatedId}`, never the player.
+ * GOLDEN RULE — match the original YouTube UX: a card confirm (Home, Search)
+ * PLAYS the video directly (card→player), with NO detail-screen re-confirmation
+ * gate. This overrides the earlier RF-CAT-04/RF-SRCH-03 "navega al detalle"
+ * reading, which produced a non-YouTube pre-play gate the user rejected on-device.
+ * The `detail` route below is retained but no longer reached from a card; its
+ * VideoDetail/related data is being re-homed INTO the player as an in-player
+ * "up next" panel (YouTube-style), not a blocking pre-play screen.
  */
 @Composable
 fun AppNavHost() {
@@ -35,7 +38,7 @@ fun AppNavHost() {
         composable(ROUTE_HOME) {
             HomeShell(
                 onVideoClick = { video ->
-                    navController.navigate("detail/${video.id}?title=${Uri.encode(video.title)}")
+                    navController.navigate("player/${video.id}?title=${Uri.encode(video.title)}")
                 },
                 onOpenSearch = { navController.navigate(ROUTE_SEARCH) },
             )
@@ -44,7 +47,7 @@ fun AppNavHost() {
         composable(ROUTE_SEARCH) {
             SearchRoute(
                 onVideoClick = { video ->
-                    navController.navigate("detail/${video.id}?title=${Uri.encode(video.title)}")
+                    navController.navigate("player/${video.id}?title=${Uri.encode(video.title)}")
                 },
                 onBack = { navController.popBackStack() },
             )
