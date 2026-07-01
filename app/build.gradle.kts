@@ -24,8 +24,14 @@ android {
 
     buildTypes {
         release {
-            // R8 full mode + a proper keep config land in a later milestone.
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            // Debug signing for now so the optimized build can be sideloaded.
+            signingConfig = signingConfigs.getByName("debug")
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
         }
     }
 

@@ -101,7 +101,11 @@ fun HomeShell() {
                     verticalArrangement = Arrangement.spacedBy(YouTrocDimens.shelfSpacing),
                     contentPadding = PaddingValues(bottom = YouTrocDimens.overscanVertical),
                 ) {
-                    itemsIndexed(shelves, key = { _, shelf -> shelf.title }) { index, shelf ->
+                    itemsIndexed(
+                        items = shelves,
+                        key = { _, shelf -> shelf.title },
+                        contentType = { _, _ -> "shelf" },
+                    ) { index, shelf ->
                         ShelfRow(
                             title = shelf.title,
                             videos = shelf.videos,

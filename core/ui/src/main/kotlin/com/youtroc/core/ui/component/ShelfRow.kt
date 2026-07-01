@@ -45,7 +45,11 @@ fun ShelfRow(
                 end = YouTrocDimens.overscanHorizontal,
             ),
         ) {
-            itemsIndexed(videos, key = { _, v -> v.id }) { index, video ->
+            itemsIndexed(
+                items = videos,
+                key = { _, v -> v.id },
+                contentType = { _, _ -> "videoCard" },
+            ) { index, video ->
                 TvVideoCard(
                     video = video,
                     onClick = { onVideoClick(video) },
