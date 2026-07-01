@@ -14,6 +14,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.youtroc.app.YouTrocApp
 import com.youtroc.core.domain.playback.PlaybackManifest
 import com.youtroc.core.domain.video.VideoId
 import com.youtroc.data.persistence.DataStoreWatchProgressStore
@@ -24,20 +25,20 @@ import com.youtroc.feature.playback.PlayerOverlay
 
 /**
  * Composition root for a resolved playback session (REQ-8..14): the only
- * place in the app that constructs the concrete [Media3MediaPlayer] /
- * [DataStoreWatchProgressStore] adapters and injects them — via
- * [playbackViewModelFactory] — into `:feature:playback`'s [PlaybackViewModel].
- * No DI framework: manual wiring, this composable IS the single seam.
+ * place in the app that constructs the concrete [DataStoreWatchProgressStore]
+ * adapter and injects it — via [playbackViewModelFactory] — into
+ * `:feature:playback`'s [PlaybackViewModel]. No DI framework: manual wiring,
+ * this composable IS the single seam.
  *
- * [Media3MediaPlayer] MUST be built on the main thread — it binds to the
- * constructing thread's `Looper`. `remember` runs during composition, which
- * always happens on the UI/main thread, so this satisfies that constraint
- * without an extra dispatch.
- *
- * Renders the SAME [Media3MediaPlayer] instance through two composables
- * stacked on top of each other: [PlayerSurface] (rendering, `:data:player`)
- * underneath, and [PlayerOverlay] (control/state, `:feature:playback`) above
- * it — the surface-as-adapter split the design ratified for REQ-8.
+ * The [Media3MediaPlayer] itself is built by [playbackViewModelFactory]
+ * INSIDE the ViewModel's `initializer` (MAJOR M1), not here via `remember` —
+ * that tied its construction to Compose's COMPOSITION scope, which is torn
+ * down and rebuilt on every Activity recreation (day/night, density,
+ * fontScale, uiMode, locale — none declared in the manifest's
+ * `configChanges`) while the NavBackStackEntry-scoped [PlaybackViewModel]
+ * survives, leaving the retained ViewModel driving an already-released
+ * player. [playbackViewModel]`.player` reads back that SAME entry-scoped
+ * instance for [PlayerSurface] instead.
  */
 @Composable
 fun PlaybackRoute(
@@ -46,16 +47,23 @@ fun PlaybackRoute(
     title: String,
 ) {
     val context = LocalContext.current
-    val player = remember { Media3MediaPlayer(context) }
+    val appScope = remember { (context.applicationContext as YouTrocApp).applicationScope }
     val watchProgressStore = remember { DataStoreWatchProgressStore(context) }
 
     val playbackViewModel: PlaybackViewModel = viewModel(
         factory = playbackViewModelFactory(
-            player = player,
+            context = context,
             watchProgressStore = watchProgressStore,
             videoId = VideoId(videoId),
+            appScope = appScope,
         ),
     )
+    // MAJOR M1: the concrete adapter the factory built for the ViewModel —
+    // read back here (never re-constructed) so PlayerSurface renders into the
+    // exact engine the ViewModel drives. Safe: this factory is the ONLY
+    // production seam that builds a PlaybackViewModel, and it always injects
+    // a Media3MediaPlayer as the domain port.
+    val player = playbackViewModel.player as Media3MediaPlayer
     val playbackState by playbackViewModel.playbackState.collectAsState()
 
     LaunchedEffect(Unit) {
@@ -76,9 +84,11 @@ fun PlaybackRoute(
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
-            // REQ-6: release the engine once this surface leaves composition
-            // (BACK popping this destination off the NavHost back stack).
-            playbackViewModel.releasePlayer()
+            // MAJOR M1: the engine is released in PlaybackViewModel.onCleared()
+            // (REQ-6), invoked by the framework only when this entry's
+            // ViewModelStore actually clears (BACK) — NOT here, since this
+            // composable is ALSO disposed on every Activity recreation while
+            // the retained ViewModel (and its player) stays alive.
         }
     }
 

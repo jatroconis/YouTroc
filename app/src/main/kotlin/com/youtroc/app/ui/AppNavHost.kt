@@ -50,6 +50,7 @@ fun AppNavHost() {
 
             PlayerScreen(
                 videoId = videoId,
+                title = title,
                 state = state,
                 onBack = { navController.popBackStack() },
                 onRetry = viewModel::resolve,

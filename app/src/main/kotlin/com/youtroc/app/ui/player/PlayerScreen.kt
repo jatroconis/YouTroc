@@ -12,12 +12,15 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -25,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Button
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import com.youtroc.core.ui.theme.OnDark
 import com.youtroc.core.ui.theme.OnDarkMuted
 import com.youtroc.core.ui.theme.YouTrocRed
 
@@ -35,6 +39,11 @@ import com.youtroc.core.ui.theme.YouTrocRed
  * ([PlaybackRoute]) — the composition root that wires the `:data:player`/
  * `:data:persistence` adapters and the `:feature:playback` overlay together.
  *
+ * [title] (the nav-arg title, MAJOR M5) is rendered as a persistent top-left
+ * label ABOVE the `when(state)` dispatch, so it is drawn immediately in every
+ * state — including `Loading`, before extraction (and therefore [PlaybackRoute]'s
+ * own overlay title) exists at all — instead of only once `Ready`.
+ *
  * BACK always pops to Home (REQ-5) from every state. [PlaybackRoute]'s
  * overlay collapses itself first while visible (its own `BackHandler` is
  * enabled only then); once hidden, that handler is disabled and this
@@ -43,6 +52,7 @@ import com.youtroc.core.ui.theme.YouTrocRed
 @Composable
 fun PlayerScreen(
     videoId: String,
+    title: String,
     state: PlayerUiState,
     onBack: () -> Unit,
     onRetry: () -> Unit,
@@ -93,6 +103,29 @@ fun PlayerScreen(
                 onBack = onBack,
             )
         }
+
+        TitleLabel(title = title, modifier = Modifier.align(Alignment.TopStart))
+    }
+}
+
+/**
+ * Persistent top-left title label (REQ-14, MAJOR M5) — drawn from the nav-arg
+ * title regardless of [PlayerUiState], so it never waits on extraction. Local
+ * duplicate of `:feature:playback`'s private `TitleLabel` (same convention as
+ * [StatusSpinner] below): that composable is private to the feature module
+ * and only exists once [PlaybackRoute] composes (`Ready`), which is exactly
+ * the gap this fixes.
+ */
+@Composable
+private fun TitleLabel(title: String, modifier: Modifier = Modifier) {
+    if (title.isBlank()) return
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(Brush.verticalGradient(0.0f to Color.Black.copy(alpha = 0.55f), 1.0f to Color.Transparent))
+            .padding(horizontal = 40.dp, vertical = 24.dp),
+    ) {
+        Text(text = title, color = OnDark, style = MaterialTheme.typography.titleMedium, maxLines = 1)
     }
 }
 
