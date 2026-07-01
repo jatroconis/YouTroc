@@ -44,8 +44,7 @@ fun ShelfRow(
         ) {
             items(videos, key = { it.id }) { video ->
                 TvVideoCard(
-                    title = video.title,
-                    subtitle = video.subtitle,
+                    video = video,
                     onClick = { onVideoClick(video) },
                 )
             }

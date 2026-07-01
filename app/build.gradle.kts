@@ -56,6 +56,9 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     debugImplementation(libs.androidx.compose.ui.tooling)
 
+    implementation(libs.coil.compose)
+    implementation(libs.coil.network.okhttp)
+
     // Playback engine — retained for the upcoming player destination.
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.kotlinx.coroutines.android)
