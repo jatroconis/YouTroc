@@ -160,4 +160,27 @@ class SearchViewModelTest {
         assertEquals(SearchUiState.Idle, viewModel.state.value)
         assertEquals(0, fake.callCount)
     }
+
+    @Test
+    fun `overlapping searches resolve to the latest confirmed query, not a stale earlier one`() = runTest {
+        // "first" is slow (50ms) and in flight when "second" (5ms) is confirmed.
+        // Without cancelling the stale in-flight job, "first"'s late Empty
+        // result would overwrite "second"'s Results after it resolves —
+        // exactly the last-write-wins race gate MINOR-2 flags.
+        val fake = FakeVideoSearch(result = SearchResult.Empty, delayMs = 50)
+        val viewModel = SearchViewModel(SearchVideos(fake))
+
+        viewModel.search("first")
+        mainScheduler.runCurrent() // lets "first" start and suspend mid-delay
+
+        fake.result = SearchResult.Success(emptyList())
+        fake.delayMs = 5
+        viewModel.search("second") // must cancel "first"'s still in-flight job
+
+        mainScheduler.advanceUntilIdle()
+
+        assertEquals(SearchUiState.Results(emptyList()), viewModel.state.value)
+        assertEquals("second", fake.lastQuery)
+        assertEquals(2, fake.callCount)
+    }
 }

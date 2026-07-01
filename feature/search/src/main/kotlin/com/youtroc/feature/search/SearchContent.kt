@@ -1,6 +1,7 @@
 package com.youtroc.feature.search
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -58,9 +59,12 @@ import com.youtroc.core.ui.theme.YouTrocRed
  * `Idle`/`Empty` (the field is ALWAYS composed, the top anchor — Empty
  * focuses the field to retype, a deliberate divergence from the spec's
  * "message anchor" wording, flagged for archive reconciliation — see tasks
- * #4409 item 12.1), [resultsFocusRequester] for `Results` (first grid card)
- * / `Offline`/`Error` (Retry). `Loading` is the sole exception — transient,
- * the field simply stays focused.
+ * #4409 item 12.1), [resultsFocusRequester] for `Results` (the grid
+ * CONTAINER, which delegates to its first child via `.focusGroup()` — gate
+ * MINOR-1, verify-review fix batch: a not-yet-placed lazy ITEM is a flaky
+ * focus target, mirrors [com.youtroc.feature.catalog.HomeContent]'s
+ * container-focus pattern) / `Offline`/`Error` (Retry). `Loading` is the
+ * sole exception — transient, the field simply stays focused.
  *
  * Compose/IME/focus glue is integration-tested only (validated on device),
  * matching this project's convention (`HomeShell`/`HomeContent`/
@@ -116,21 +120,19 @@ fun SearchContent(
                     horizontalArrangement = Arrangement.spacedBy(YouTrocDimens.cardSpacing),
                     verticalArrangement = Arrangement.spacedBy(YouTrocDimens.shelfSpacing),
                     contentPadding = PaddingValues(horizontal = YouTrocDimens.overscanHorizontal),
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .focusRequester(resultsFocusRequester)
+                        .focusGroup(),
                 ) {
                     itemsIndexed(
                         items = state.videos,
                         key = { _, video -> video.id },
                         contentType = { _, _ -> "videoCard" },
-                    ) { index, video ->
+                    ) { _, video ->
                         TvVideoCard(
                             video = video,
                             onClick = { onVideoClick(video) },
-                            modifier = if (index == 0) {
-                                Modifier.focusRequester(resultsFocusRequester)
-                            } else {
-                                Modifier
-                            },
                         )
                     }
                 }

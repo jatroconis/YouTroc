@@ -18,11 +18,19 @@ import kotlinx.coroutines.delay
  * [result] is mutable (`var`) so a single instance can simulate a changed
  * backend answer between calls (retry test) — the
  * [com.youtroc.core.domain.search.SearchVideos] wrapping this fake is REAL,
- * never faked itself. [search] suspends via a 1ms virtual
- * [delay] so [SearchViewModel]'s transient `Loading` state is a real,
- * externally observable suspension point under `StandardTestDispatcher`.
+ * never faked itself. [search] suspends via a virtual [delay] (default 1ms,
+ * overridable via [delayMs]) so [SearchViewModel]'s transient `Loading`
+ * state is a real, externally observable suspension point under
+ * `StandardTestDispatcher`.
+ *
+ * [result] and [delayMs] are snapshotted at call time (before suspending),
+ * not read again after the delay — this lets a test reconfigure both fields
+ * between two overlapping [search] calls (e.g. a slow first call, a fast
+ * second call) and have each call return what was requested for IT,
+ * regardless of resume order, which is exactly what is needed to prove the
+ * last-write-wins cancellation race (gate MINOR-2, verify-review fix batch).
  */
-class FakeVideoSearch(var result: SearchResult) : VideoSearch {
+class FakeVideoSearch(var result: SearchResult, var delayMs: Long = 1) : VideoSearch {
 
     var callCount: Int = 0
         private set
@@ -33,7 +41,9 @@ class FakeVideoSearch(var result: SearchResult) : VideoSearch {
     override suspend fun search(query: String): SearchResult {
         callCount++
         lastQuery = query
-        delay(1)
-        return result
+        val callResult = result
+        val callDelay = delayMs
+        delay(callDelay)
+        return callResult
     }
 }
