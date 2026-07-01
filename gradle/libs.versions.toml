@@ -1,7 +1,13 @@
 [versions]
-kotlin = "2.0.21"
-coroutines = "1.9.0"
+# Aligned with the current ecosystem: okhttp/okio ship Kotlin 2.2 metadata, so the
+# compiler must be >= 2.2 to read them.
+kotlin = "2.2.21"
+coroutines = "1.10.2"
 junit = "5.11.3"
+# NewPipeExtractor version string carries the leading 'v' git tag (JitPack resolves it verbatim).
+newpipeextractor = "v0.26.3"
+# OkHttp pinned to the exact version the extractor is tested against.
+okhttp = "5.3.2"
 
 [libraries]
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
@@ -9,6 +15,8 @@ kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-t
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+newpipe-extractor = { module = "com.github.TeamNewPipe:NewPipeExtractor", version.ref = "newpipeextractor" }
+okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
