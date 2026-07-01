@@ -166,8 +166,7 @@ private fun NavRail(
         Column(
             modifier = Modifier
                 .fillMaxHeight()
-                .padding(vertical = YouTrocDimens.overscanVertical, horizontal = 10.dp)
-                .focusGroup(),
+                .padding(vertical = YouTrocDimens.overscanVertical, horizontal = 10.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.height(44.dp)) {
