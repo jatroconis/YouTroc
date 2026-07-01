@@ -13,7 +13,7 @@ youtroc replica el **YouTube-for-TV moderno**, el opuesto deliberado del look Le
 | Navegación | **Rail vertical delgado a la izquierda** que se expande con el foco (íconos → íconos+etiquetas) | Columna fija de categorías + filas planas (Leanback) |
 | Home | **Hero inmersivo** arriba + **shelves** (carruseles) de cards redondeadas | `ListRow` planas |
 | Cards | 16:9 redondeadas (8dp), escalan (1.1x) + glow al enfocar | Cards Leanback |
-| Player | Overlay propio estilo YouTube dic-2025 (título arriba-izq, 3 zonas) | Controles Leanback |
+| Player | Overlay propio estilo YouTube dic-2025 (título arriba-izq; 2 zonas FASE-1: transporte + pills) | Controles Leanback |
 
 Base técnica: **`androidx.tv:tv-material 1.1.0` (ESTABLE, 2026-05-06, paquete `androidx.tv.material3`)** + los lazy layouts de `androidx.compose.foundation`.
 
@@ -100,6 +100,8 @@ Estos hechos están verificados y contradicen la mayoría de tutoriales viejos. 
  D-pad L/R: 1ra vez revela el overlay; 2da vez hace seek. BACK cierra.
 ```
 
+> **Reconciliación FASE-1 (2026-07-01):** el overlay entregado tiene **2 zonas** (transporte CENTRO + fila de pills), no 3. La **zona IZQUIERDA** (canal/descripción/Suscribir) y el pill de **comentar** (💬) se difieren a `:feature:video` — requieren sesión Google que el modelo anónimo no tiene. Los pills entregados son like/dislike/CC/ajustes; like/dislike son afordancias de UI (escrituras reales siguen en **Diferido**).
+
 ---
 
 ## 5. Mapeo componente por componente
@@ -164,7 +166,7 @@ Flechas de dependencia hacia adentro: `:feature -> :core:domain <- :data`; `:fea
 2. Home = trending — hero inmersivo hand-built + `LazyColumn` de `ShelfRow` (shelves derivados de trending: "Trending", "Música", "Gaming"). Shorts fuera del feed.
 3. Búsqueda — campo + teclado D-pad + sugerencias/historial (`ListItem`) + `LazyVerticalGrid` de resultados.
 4. Detalle de video + relacionados (**read-only**) — header inmersivo, metadata, CTA Play que lanza el player, shelf de relacionados. Like/Save/Subscribe visuales/no-op.
-5. Player a pantalla completa — ExoPlayer + overlay custom (título arriba-izq, 3 zonas, scrubber; D-pad L/R revela y luego hace seek; BACK cierra). Destino top-level.
+5. Player a pantalla completa — ExoPlayer + overlay custom (título arriba-izq; 2 zonas FASE-1: transporte + pills, scrubber; D-pad L/R revela y luego hace seek; BACK cierra; zona izquierda/comentar diferidos a `:feature:video`). Destino top-level.
 6. Transversal — render de `sealed UiState` (Loading/Content/Empty/Error/Offline) en cada pantalla, focus restoration a la card exacta al volver del rail, `@Preview` en todos los presentacionales.
 
 **Diferido:** previews inline al enfocar; escrituras/cuenta (sign-in, Suscripciones, Biblioteca, Like/Save/Subscribe reales, comentarios); voz; `Chip`s; `TabRow`; Shorts.
