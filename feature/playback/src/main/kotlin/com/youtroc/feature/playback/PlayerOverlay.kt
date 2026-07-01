@@ -64,6 +64,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import com.youtroc.core.domain.playback.PlaybackState
+import com.youtroc.core.domain.playback.VideoQuality
 import com.youtroc.core.ui.theme.OnDark
 import com.youtroc.core.ui.theme.OnDarkMuted
 import com.youtroc.core.ui.theme.YouTrocRed
@@ -73,6 +74,7 @@ import com.youtroc.feature.playback.overlay.OverlayState
 import com.youtroc.feature.playback.overlay.PlaybackTimeFormatter
 import com.youtroc.feature.playback.overlay.SeekAmount
 import com.youtroc.feature.playback.overlay.decideDpadAction
+import com.youtroc.feature.playback.quality.QualityMenu
 import kotlinx.coroutines.delay
 
 /**
@@ -115,6 +117,14 @@ import kotlinx.coroutines.delay
  * already used for `Media3MediaPlayer`/`PlayerSurface`. The pure pieces it
  * delegates to ([decideDpadAction], [OverlayReducer], [SeekAmount],
  * [PlaybackTimeFormatter]) ARE unit-tested.
+ *
+ * The ⚙ pill (REQ-Q2/REQ-11) opens the "Calidad" menu — [QualityMenu] — as a
+ * modal layer this composable owns via local [menuVisible] state, rather
+ * than forwarding to an external callback. While the menu is open: the
+ * outer key handler stops intercepting D-pad input (menu owns it via normal
+ * Compose focus search), the 4s auto-hide is suppressed, and a nested
+ * [BackHandler] — composed AFTER the overlay's own, so LIFO makes it win —
+ * closes only the menu (REQ-Q7), restoring focus to the settings pill.
  */
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -129,16 +139,22 @@ fun PlayerOverlay(
     onLike: () -> Unit = {},
     onDislike: () -> Unit = {},
     onCaptions: () -> Unit = {},
-    onSettings: () -> Unit = {},
+    availableQualities: List<VideoQuality> = emptyList(),
+    activeQuality: VideoQuality? = null,
+    onSelectQuality: (VideoQuality) -> Unit = {},
+    onSelectAuto: () -> Unit = {},
 ) {
     var overlayState by remember { mutableStateOf<OverlayState>(OverlayState.Hidden) }
     var controlsFocused by remember { mutableStateOf(false) }
     var lastActivityMs by remember { mutableLongStateOf(0L) }
     var pendingEnterControls by remember { mutableStateOf(false) }
     var longPressActive by remember { mutableStateOf(false) }
+    var menuVisible by remember { mutableStateOf(false) }
     val neutralFocus = remember { FocusRequester() }
     val transportFocus = remember { FocusRequester() }
     val pillsFocus = remember { FocusRequester() }
+    val settingsFocus = remember { FocusRequester() }
+    val menuFocus = remember { FocusRequester() }
     val currentOnSeek by rememberUpdatedState(onSeek)
     val currentOnPlayPause by rememberUpdatedState(onPlayPause)
 
@@ -163,11 +179,28 @@ fun PlayerOverlay(
         }
     }
 
+    // MAJOR-5 (design gate #4431): move focus into the "Calidad" menu
+    // CONTAINER only after it actually composes — same M2 deferred-focus
+    // pattern as [transportFocus] above, not requested inline during the
+    // click that opened it. Closing the menu (BACK, or applying a
+    // selection) restores focus to the settings pill that opened it.
+    LaunchedEffect(menuVisible) {
+        if (menuVisible) {
+            runCatching { menuFocus.requestFocus() }
+        } else {
+            runCatching { settingsFocus.requestFocus() }
+        }
+    }
+
     // 4s auto-hide (REQ-11), reset by ANY control activity (MAJOR M4) — not
     // just the key event that first revealed the overlay. Keyed on
     // [lastActivityMs] rather than [overlayState] so in-row focus movement
     // and button clicks (which call [registerActivity]) restart the timer.
-    LaunchedEffect(lastActivityMs) {
+    // Also keyed/guarded on [menuVisible] (minor fix, #4431): collapsing the
+    // controls behind an open "Calidad" menu would strand its focus, so
+    // auto-hide is fully suppressed while the menu is open.
+    LaunchedEffect(lastActivityMs, menuVisible) {
+        if (menuVisible) return@LaunchedEffect
         val revealed = overlayState as? OverlayState.Revealed ?: return@LaunchedEffect
         delay(OverlayReducer.AUTO_HIDE_TIMEOUT_MS)
         val next = OverlayReducer.onInactivityTimeout(revealed, nowMs = revealed.sinceMs + OverlayReducer.AUTO_HIDE_TIMEOUT_MS)
@@ -188,6 +221,12 @@ fun PlayerOverlay(
         modifier = modifier
             .fillMaxSize()
             .onPreviewKeyEvent { keyEvent ->
+                // minor fix (#4431): while the "Calidad" menu is open it owns
+                // ALL D-pad input via normal Compose focus search — the
+                // reveal-then-seek gesture and pills/transport navigation
+                // below must not intercept keys meant for the menu's rows.
+                if (menuVisible) return@onPreviewKeyEvent false
+
                 val repeatCount = keyEvent.nativeKeyEvent.repeatCount
                 // MAJOR M3: Android's KeyUp.repeatCount is ALWAYS 0, so the
                 // held-vs-tap distinction must be tracked ourselves across
@@ -289,15 +328,42 @@ fun PlayerOverlay(
                     onNext = { registerActivity(); onNext() },
                 )
 
-                PillsRow(
-                    focusRequester = pillsFocus,
-                    upFocus = transportFocus,
-                    onLike = { registerActivity(); onLike() },
-                    onDislike = { registerActivity(); onDislike() },
-                    onCaptions = { registerActivity(); onCaptions() },
-                    onSettings = { registerActivity(); onSettings() },
-                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    PillsRow(
+                        focusRequester = pillsFocus,
+                        upFocus = transportFocus,
+                        settingsFocusRequester = settingsFocus,
+                        onLike = { registerActivity(); onLike() },
+                        onDislike = { registerActivity(); onDislike() },
+                        onCaptions = { registerActivity(); onCaptions() },
+                        onSettings = { registerActivity(); menuVisible = true },
+                    )
+                    QualityBadge(label = activeQuality?.label ?: "Auto")
+                }
             }
+        }
+
+        if (menuVisible) {
+            QualityMenu(
+                availableQualities = availableQualities,
+                activeQuality = activeQuality,
+                menuFocusRequester = menuFocus,
+                onSelectQuality = { quality -> onSelectQuality(quality); menuVisible = false },
+                onSelectAuto = { onSelectAuto(); menuVisible = false },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 40.dp, bottom = 120.dp),
+            )
+        }
+
+        // minor fix (#4431): composed LAST so LIFO makes THIS handler win
+        // over the overlay's own `BackHandler` above while the menu is open —
+        // BACK closes the "Calidad" menu only, never pops the player.
+        BackHandler(enabled = menuVisible) {
+            menuVisible = false
         }
     }
 }
@@ -417,6 +483,7 @@ private fun TransportRow(
 private fun PillsRow(
     focusRequester: FocusRequester,
     upFocus: FocusRequester,
+    settingsFocusRequester: FocusRequester,
     onLike: () -> Unit,
     onDislike: () -> Unit,
     onCaptions: () -> Unit,
@@ -437,7 +504,25 @@ private fun PillsRow(
         ControlButton(icon = Icons.Default.ThumbUp, contentDescription = "Me gusta", onClick = onLike, small = true)
         ControlButton(icon = Icons.Default.ThumbDown, contentDescription = "No me gusta", onClick = onDislike, small = true)
         ControlButton(icon = Icons.Default.ClosedCaption, contentDescription = "Subtítulos", onClick = onCaptions, small = true)
-        ControlButton(icon = Icons.Default.Settings, contentDescription = "Ajustes", onClick = onSettings, small = true)
+        ControlButton(
+            icon = Icons.Default.Settings,
+            contentDescription = "Ajustes",
+            onClick = onSettings,
+            small = true,
+            modifier = Modifier.focusRequester(settingsFocusRequester),
+        )
+    }
+}
+
+/** Small non-focusable "Calidad" indicator next to the pills (REQ-Q2): the active pick, or "Auto". */
+@Composable
+private fun QualityBadge(label: String, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(6.dp))
+            .padding(horizontal = 10.dp, vertical = 4.dp),
+    ) {
+        Text(text = label, color = OnDarkMuted, style = MaterialTheme.typography.labelMedium)
     }
 }
 

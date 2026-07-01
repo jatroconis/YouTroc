@@ -7,6 +7,7 @@ import com.youtroc.core.domain.playback.PlaybackManifest
 import com.youtroc.core.domain.playback.PlaybackPosition
 import com.youtroc.core.domain.playback.PlaybackState
 import com.youtroc.core.domain.playback.ResumeDecision
+import com.youtroc.core.domain.playback.VideoQuality
 import com.youtroc.core.domain.playback.WatchProgressStore
 import com.youtroc.core.domain.video.VideoId
 import kotlinx.coroutines.CoroutineScope
@@ -81,6 +82,17 @@ class PlaybackViewModel(
         val target = (current.positionMs + deltaMs).coerceIn(0L, duration)
         player.seekTo(target)
     }
+
+    /**
+     * Pins video to [quality] (REQ-Q4); pure delegation to the port. Audio
+     * selection and the codec-chain fallback (REQ-10) keep adapting —
+     * [playbackState] already surfaces the result via [MediaPlayer.state],
+     * no new flow needed (REQ-Q1).
+     */
+    fun onSelectQuality(quality: VideoQuality) = player.selectQuality(quality)
+
+    /** Clears any pinned quality and restores automatic (ABR) selection (REQ-Q4). */
+    fun onSelectAuto() = player.selectAuto()
 
     /** Pauses AND persists the current position — see class doc. */
     fun pause() {

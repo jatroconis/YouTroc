@@ -100,9 +100,13 @@ fun PlaybackRoute(
             modifier = Modifier.fillMaxSize(),
             onPlayPause = playbackViewModel::togglePlayPause,
             onSeek = playbackViewModel::seekBy,
+            availableQualities = playbackState.availableQualities,
+            activeQuality = playbackState.activeQuality,
+            onSelectQuality = playbackViewModel::onSelectQuality,
+            onSelectAuto = playbackViewModel::onSelectAuto,
             // No related-videos/queue destination in FASE 1 (spec Non-Goals):
-            // prev/next/like/dislike/captions/settings stay PlayerOverlay's
-            // default no-ops until that feature exists.
+            // prev/next/like/dislike/captions stay PlayerOverlay's default
+            // no-ops until that feature exists.
         )
     }
 }

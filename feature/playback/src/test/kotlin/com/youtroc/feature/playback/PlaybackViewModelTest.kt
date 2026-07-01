@@ -2,6 +2,7 @@ package com.youtroc.feature.playback
 
 import com.youtroc.core.domain.playback.PlaybackManifest
 import com.youtroc.core.domain.playback.PlaybackPosition
+import com.youtroc.core.domain.playback.VideoQuality
 import com.youtroc.core.domain.video.VideoId
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -203,5 +204,50 @@ class PlaybackViewModelTest {
         appScheduler.advanceUntilIdle()
 
         assertEquals(PlaybackPosition(77_000L), store.load(videoId))
+    }
+
+    /** REQ-Q1/REQ-Q4: `onSelectQuality` is a pure delegation to the port. */
+    @Test
+    fun `onSelectQuality delegates to the player port`() = runTest {
+        val player = FakeMediaPlayer()
+        val store = FakeWatchProgressStore()
+        val viewModel = PlaybackViewModel(player, store, videoId, appScope)
+        viewModel.start(manifest)
+        val quality = VideoQuality(id = "h720", label = "720p", heightPx = 720)
+
+        viewModel.onSelectQuality(quality)
+
+        assertEquals(FakeMediaPlayer.QualitySelection.Manual(quality), player.lastQualitySelection)
+    }
+
+    /** REQ-Q1/REQ-Q4: `onSelectAuto` is a pure delegation to the port. */
+    @Test
+    fun `onSelectAuto delegates to the player port`() = runTest {
+        val player = FakeMediaPlayer()
+        val store = FakeWatchProgressStore()
+        val viewModel = PlaybackViewModel(player, store, videoId, appScope)
+        viewModel.start(manifest)
+        val quality = VideoQuality(id = "h720", label = "720p", heightPx = 720)
+        viewModel.onSelectQuality(quality)
+
+        viewModel.onSelectAuto()
+
+        assertEquals(FakeMediaPlayer.QualitySelection.Auto, player.lastQualitySelection)
+    }
+
+    /** REQ-Q1: `playbackState` is the single observable source for qualities — no new flow. */
+    @Test
+    fun `playbackState surfaces available and active qualities from the player`() = runTest {
+        val player = FakeMediaPlayer()
+        val store = FakeWatchProgressStore()
+        val viewModel = PlaybackViewModel(player, store, videoId, appScope)
+        viewModel.start(manifest)
+        val q1080 = VideoQuality(id = "h1080", label = "1080p", heightPx = 1080)
+        val q720 = VideoQuality(id = "h720", label = "720p", heightPx = 720)
+
+        player.emitQualities(available = listOf(q1080, q720), active = q720)
+
+        assertEquals(listOf(q1080, q720), viewModel.playbackState.value.availableQualities)
+        assertEquals(q720, viewModel.playbackState.value.activeQuality)
     }
 }
