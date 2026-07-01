@@ -71,6 +71,13 @@ dependencies {
     // :data:extraction only.
     implementation(project(":feature:search"))
 
+    // Video-detail destination (RF-VID-01..05): same composition-root pattern —
+    // :app wires the concrete NewPipeVideoDetail adapter into :feature:video's
+    // DetailViewModel (see DetailViewModelFactory). :app never imports
+    // org.schabi.newpipe.* directly — ContentCountry is built inside
+    // :data:extraction only.
+    implementation(project(":feature:video"))
+
     // Compose for TV
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.tv.material)

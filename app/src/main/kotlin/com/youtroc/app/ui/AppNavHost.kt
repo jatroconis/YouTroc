@@ -10,15 +10,22 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.youtroc.app.ui.detail.DetailRoute
 import com.youtroc.app.ui.player.PlayerScreen
 import com.youtroc.app.ui.player.PlayerViewModel
 import com.youtroc.app.ui.search.SearchRoute
 
 /**
- * The app's navigation graph. Three destinations: the Home shell, the
- * railless search screen, and a full-screen player. The title rides along
- * the player route (URL-encoded) so the player can show it immediately,
- * before extraction resolves.
+ * The app's navigation graph. Four destinations: the Home shell, the
+ * railless search screen, the railless video-detail screen, and a
+ * full-screen player. The title rides along the detail/player routes
+ * (URL-encoded) so each screen can show it immediately, before extraction
+ * resolves.
+ *
+ * Card confirms (Home, Search) route to detail, NOT the player directly
+ * (RF-CAT-04/RF-SRCH-03, reconciled by video-detail spec #4417) — the flow
+ * is card→detail→(Reproducir)→player, and detail's own related shelf
+ * recurses back into `detail/{relatedId}`, never the player.
  */
 @Composable
 fun AppNavHost() {
@@ -28,7 +35,7 @@ fun AppNavHost() {
         composable(ROUTE_HOME) {
             HomeShell(
                 onVideoClick = { video ->
-                    navController.navigate("player/${video.id}?title=${Uri.encode(video.title)}")
+                    navController.navigate("detail/${video.id}?title=${Uri.encode(video.title)}")
                 },
                 onOpenSearch = { navController.navigate(ROUTE_SEARCH) },
             )
@@ -37,7 +44,31 @@ fun AppNavHost() {
         composable(ROUTE_SEARCH) {
             SearchRoute(
                 onVideoClick = { video ->
-                    navController.navigate("player/${video.id}?title=${Uri.encode(video.title)}")
+                    navController.navigate("detail/${video.id}?title=${Uri.encode(video.title)}")
+                },
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable(
+            route = "detail/{videoId}?title={title}",
+            arguments = listOf(
+                navArgument("videoId") { type = NavType.StringType },
+                navArgument("title") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+            ),
+        ) { entry ->
+            val videoId = entry.arguments?.getString("videoId").orEmpty()
+            val title = entry.arguments?.getString("title").orEmpty()
+
+            DetailRoute(
+                videoId = videoId,
+                title = title,
+                onPlay = { navController.navigate("player/$videoId?title=${Uri.encode(title)}") },
+                onRelatedClick = { related ->
+                    navController.navigate("detail/${related.id}?title=${Uri.encode(related.title)}")
                 },
                 onBack = { navController.popBackStack() },
             )

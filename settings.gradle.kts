@@ -54,5 +54,10 @@ include(":feature:catalog")
 // on :data:extraction, so it only ever talks to the domain ports.
 include(":feature:search")
 
+// Video (detail) feature: the video-detail screen container (DetailViewModel) +
+// presentational content. Depends only on :core:domain (+ :core:ui) — NEVER
+// on :data:extraction, so it only ever talks to the domain ports.
+include(":feature:video")
+
 // Android application: the Hito 0 walking skeleton that plays a stream on the TV.
 include(":app")
