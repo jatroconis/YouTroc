@@ -6,6 +6,10 @@ data class PlaybackState(
     val isPlaying: Boolean,
     val positionMs: Long,
     val durationMs: Long,
+    /** Resolutions the current manifest currently exposes; empty when unknown or single-rendition. */
+    val availableQualities: List<VideoQuality> = emptyList(),
+    /** The pinned quality, or `null` when Automatic (ABR) is active. */
+    val activeQuality: VideoQuality? = null,
 ) {
     /** Lifecycle of a media source loaded into a [MediaPlayer]. */
     enum class Phase {

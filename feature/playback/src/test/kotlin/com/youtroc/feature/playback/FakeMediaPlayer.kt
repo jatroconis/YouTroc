@@ -4,6 +4,7 @@ import com.youtroc.core.domain.playback.MediaPlayer
 import com.youtroc.core.domain.playback.PlaybackManifest
 import com.youtroc.core.domain.playback.PlaybackPosition
 import com.youtroc.core.domain.playback.PlaybackState
+import com.youtroc.core.domain.playback.VideoQuality
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -31,6 +32,15 @@ class FakeMediaPlayer : MediaPlayer {
     var released: Boolean = false
         private set
 
+    /** Last call made through [selectQuality]/[selectAuto], for assertions. */
+    var lastQualitySelection: QualitySelection? = null
+        private set
+
+    sealed interface QualitySelection {
+        data class Manual(val quality: VideoQuality) : QualitySelection
+        data object Auto : QualitySelection
+    }
+
     override fun setMedia(manifest: PlaybackManifest, startAt: PlaybackPosition?) {
         lastManifest = manifest
         lastStartAt = startAt
@@ -50,6 +60,16 @@ class FakeMediaPlayer : MediaPlayer {
         mutableState.value = mutableState.value.copy(positionMs = positionMs)
     }
 
+    override fun selectQuality(quality: VideoQuality) {
+        lastQualitySelection = QualitySelection.Manual(quality)
+        mutableState.value = mutableState.value.copy(activeQuality = quality)
+    }
+
+    override fun selectAuto() {
+        lastQualitySelection = QualitySelection.Auto
+        mutableState.value = mutableState.value.copy(activeQuality = null)
+    }
+
     override fun release() {
         released = true
     }
@@ -61,5 +81,10 @@ class FakeMediaPlayer : MediaPlayer {
             positionMs = positionMs,
             durationMs = durationMs,
         )
+    }
+
+    /** Test helper: simulates the engine publishing the qualities the current manifest exposes. */
+    fun emitQualities(available: List<VideoQuality>, active: VideoQuality? = null) {
+        mutableState.value = mutableState.value.copy(availableQualities = available, activeQuality = active)
     }
 }

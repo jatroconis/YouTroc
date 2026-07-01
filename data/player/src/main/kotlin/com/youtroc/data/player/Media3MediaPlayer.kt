@@ -5,10 +5,12 @@ import android.net.Uri
 import android.os.Looper
 import android.view.SurfaceView
 import androidx.media3.common.C
+import androidx.media3.common.Format
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.common.Tracks
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
@@ -23,6 +25,10 @@ import com.youtroc.core.domain.playback.MediaPlayer as MediaPlayerPort
 import com.youtroc.core.domain.playback.PlaybackManifest
 import com.youtroc.core.domain.playback.PlaybackPosition
 import com.youtroc.core.domain.playback.PlaybackState
+import com.youtroc.core.domain.playback.QualitySelectionPolicy
+import com.youtroc.core.domain.playback.VideoQuality
+import com.youtroc.core.domain.playback.VideoQualityCatalog
+import com.youtroc.core.domain.playback.VideoRendition
 import java.io.ByteArrayInputStream
 import java.nio.charset.StandardCharsets
 import kotlinx.coroutines.CoroutineScope
@@ -116,6 +122,12 @@ class Media3MediaPlayer(context: Context) : MediaPlayerPort {
     /** Emits [publishState] every [POSITION_TICK_MS] while playing so position-dependent UI (scrubber, resume-save) sees a live position, not one frozen between phase/isPlaying/error callbacks. */
     private var positionTickerJob: Job? = null
 
+    /** Qualities the current manifest exposes, refreshed on every [Player.Listener.onTracksChanged]. */
+    private var availableQualities: List<VideoQuality> = emptyList()
+
+    /** User-pinned height intent; `null` means Automatic (ABR). Drives [PlaybackState.activeQuality]. */
+    private var pinnedHeight: Int? = null
+
     init {
         player.addListener(
             object : Player.Listener {
@@ -125,6 +137,18 @@ class Media3MediaPlayer(context: Context) : MediaPlayerPort {
                     updatePositionTicker(isPlaying)
                 }
                 override fun onPlayerErrorChanged(error: PlaybackException?) = publishState()
+
+                override fun onTracksChanged(tracks: Tracks) {
+                    availableQualities = VideoQualityCatalog.from(videoRenditionsOf(tracks))
+                    // MAJOR-7: a pinned height may no longer be available after the manifest
+                    // refreshes — re-resolve against the new catalog instead of only reacting
+                    // to selectQuality() calls, so the fallback (REQ-Q5) applies reactively.
+                    pinnedHeight?.let { pinned ->
+                        val resolved = QualitySelectionPolicy.resolve(pinned, availableQualities)
+                        if (resolved != null) applyHeightWindow(resolved.heightPx) else applyAutoWindow()
+                    }
+                    publishState()
+                }
             },
         )
     }
@@ -153,6 +177,9 @@ class Media3MediaPlayer(context: Context) : MediaPlayerPort {
     }
 
     override fun setMedia(manifest: PlaybackManifest, startAt: PlaybackPosition?) {
+        // REQ-Q6: each new video starts on Automatic; the prior video's pin never carries over.
+        applyAutoWindow()
+        availableQualities = emptyList()
         val startPositionMs = startAt?.positionMs ?: C.TIME_UNSET
         player.setMediaSource(mediaSourceFor(manifest), startPositionMs)
         player.prepare()
@@ -163,6 +190,39 @@ class Media3MediaPlayer(context: Context) : MediaPlayerPort {
     override fun pause() = player.pause()
 
     override fun seekTo(positionMs: Long) = player.seekTo(positionMs)
+
+    override fun selectQuality(quality: VideoQuality) {
+        val target = QualitySelectionPolicy.resolve(quality.heightPx, availableQualities)
+        if (target != null) applyHeightWindow(target.heightPx) else applyAutoWindow()
+        publishState()
+    }
+
+    override fun selectAuto() {
+        applyAutoWindow()
+        publishState()
+    }
+
+    /** Pins video to [heightPx] via a min==max size window; audio + codec-chain fallback (REQ-10) keep adapting. */
+    private fun applyHeightWindow(heightPx: Int) {
+        pinnedHeight = heightPx
+        trackSelector.setParameters(
+            trackSelector.parameters.buildUpon()
+                .setMinVideoSize(0, heightPx)
+                .setMaxVideoSize(MAX_VIDEO_WIDTH, heightPx)
+                .build(),
+        )
+    }
+
+    /** Restores the shipped 4K-capped default window (NOT [DefaultTrackSelector.Parameters.Builder.clearVideoSizeConstraints], which would drop the cap). */
+    private fun applyAutoWindow() {
+        pinnedHeight = null
+        trackSelector.setParameters(
+            trackSelector.parameters.buildUpon()
+                .setMinVideoSize(0, 0)
+                .setMaxVideoSize(MAX_VIDEO_WIDTH, MAX_VIDEO_HEIGHT)
+                .build(),
+        )
+    }
 
     override fun release() {
         positionTickerJob?.cancel()
@@ -192,12 +252,38 @@ class Media3MediaPlayer(context: Context) : MediaPlayerPort {
         ProgressiveMediaSource.Factory(dataSourceFactory)
             .createMediaSource(MediaItem.fromUri(url))
 
+    /**
+     * Maps live [tracks] to pure [VideoRendition]s: only video-typed groups,
+     * only renderer-supported entries ([Tracks.Group.isTrackSupported] is a
+     * renderer-capability check, orthogonal to the size-window selection, so
+     * enumeration stays complete even while a height is pinned), and only
+     * formats reporting a real height.
+     */
+    private fun videoRenditionsOf(tracks: Tracks): List<VideoRendition> =
+        tracks.groups
+            .filter { it.type == C.TRACK_TYPE_VIDEO }
+            .flatMap { group ->
+                (0 until group.length)
+                    .filter { group.isTrackSupported(it) }
+                    .map { group.getTrackFormat(it) }
+                    .filter { it.height != Format.NO_VALUE && it.height > 0 }
+                    .map { format ->
+                        VideoRendition(
+                            heightPx = format.height,
+                            widthPx = format.width,
+                            bitrate = format.bitrate.takeIf { it != Format.NO_VALUE },
+                        )
+                    }
+            }
+
     private fun publishState() {
         mutableState.value = PlaybackState(
             phase = PlaybackPhaseMapper.map(player.playbackState, hasError = player.playerError != null),
             isPlaying = player.isPlaying,
             positionMs = player.currentPosition,
             durationMs = player.duration.takeIf { it != C.TIME_UNSET } ?: 0L,
+            availableQualities = availableQualities,
+            activeQuality = pinnedHeight?.let { pinned -> availableQualities.firstOrNull { it.heightPx == pinned } },
         )
     }
 

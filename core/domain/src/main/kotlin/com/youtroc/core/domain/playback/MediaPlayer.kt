@@ -24,6 +24,12 @@ interface MediaPlayer {
 
     fun seekTo(positionMs: Long)
 
+    /** Pins video to [quality]. Audio selection and codec-chain fallback keep adapting. */
+    fun selectQuality(quality: VideoQuality)
+
+    /** Clears any pinned quality and restores automatic (ABR) rendition selection. */
+    fun selectAuto()
+
     /** Releases underlying engine resources. Must be safe to call more than once. */
     fun release()
 }
