@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.compose.compiler)
 }
 
 android {
@@ -15,6 +16,10 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "0.1.0"
+    }
+
+    buildFeatures {
+        compose = true
     }
 
     buildTypes {
@@ -39,11 +44,21 @@ kotlin {
 dependencies {
     implementation(project(":core:domain"))
     implementation(project(":data:extraction"))
+    implementation(project(":core:ui"))
 
-    implementation(libs.androidx.activity)
+    // Compose for TV
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.tv.material)
+    implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.material.icons.core)
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.compose.ui.tooling.preview)
+    debugImplementation(libs.androidx.compose.ui.tooling)
+
+    // Playback engine — retained for the upcoming player destination.
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.kotlinx.coroutines.android)
-
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.ui)
 

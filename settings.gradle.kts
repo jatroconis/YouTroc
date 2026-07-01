@@ -24,6 +24,9 @@ dependencyResolutionManagement {
 // The heart of the hexagon: pure Kotlin/JVM, no Android dependency.
 include(":core:domain")
 
+// Design system: Compose for TV atoms/molecules. Knows no domain nor data.
+include(":core:ui")
+
 // Extraction adapter: also pure Kotlin/JVM (NewPipeExtractor is a Java library).
 // This is where the project's #1 risk lives; validated before any Android module.
 include(":data:extraction")
