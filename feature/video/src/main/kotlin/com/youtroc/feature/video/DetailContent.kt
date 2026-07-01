@@ -1,5 +1,6 @@
 package com.youtroc.feature.video
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,10 +15,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.MaterialTheme
@@ -30,6 +36,7 @@ import com.youtroc.core.ui.theme.ElevatedSurface
 import com.youtroc.core.ui.theme.OnDark
 import com.youtroc.core.ui.theme.OnDarkMuted
 import com.youtroc.core.ui.theme.YouTrocDimens
+import com.youtroc.core.ui.theme.YouTrocRed
 
 /**
  * Presentational video-detail content: título/canal/meta, a "Reproducir"
@@ -151,11 +158,23 @@ private fun DetailBody(
 
         if (detail.description.isNotBlank()) {
             Spacer(Modifier.height(20.dp))
+            var descriptionFocused by remember { mutableStateOf(false) }
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(max = 160.dp)
+                    .onFocusChanged { descriptionFocused = it.isFocused }
                     .focusable()
+                    // Focused-only border so a D-pad user landing here (and
+                    // otherwise seeing no visual change) can tell focus
+                    // reached the description and it is scrollable.
+                    .then(
+                        if (descriptionFocused) {
+                            Modifier.border(2.dp, YouTrocRed, RoundedCornerShape(8.dp))
+                        } else {
+                            Modifier
+                        },
+                    )
                     .verticalScroll(rememberScrollState()),
             ) {
                 Text(

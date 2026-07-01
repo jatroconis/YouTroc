@@ -42,7 +42,20 @@ class DetailViewModel(
     fun load() {
         viewModelScope.launch {
             _state.value = DetailUiState.Loading
-            _state.value = when (val result = getVideoDetail(VideoId(videoId))) {
+
+            // A blank videoId can't be identified — `VideoId`'s
+            // require(non-blank) init check would otherwise throw an
+            // IllegalArgumentException that escapes viewModelScope and
+            // crashes the app. Map it to the same terminal NotAvailable
+            // state a resolvable-but-missing video reaches, and never call
+            // the port with an id that can't be constructed.
+            val id = runCatching { VideoId(videoId) }.getOrNull()
+            if (id == null) {
+                _state.value = DetailUiState.NotAvailable
+                return@launch
+            }
+
+            _state.value = when (val result = getVideoDetail(id)) {
                 is DetailResult.Success -> DetailUiState.Content(result.detail.toDetailUi())
                 DetailResult.NotAvailable -> DetailUiState.NotAvailable
                 DetailResult.Offline -> DetailUiState.Offline

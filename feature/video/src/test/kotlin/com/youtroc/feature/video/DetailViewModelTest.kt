@@ -186,4 +186,18 @@ class DetailViewModelTest {
 
         assertEquals(VideoId("dQw4w9WgXcQ"), fake.lastVideoId)
     }
+
+    @Test
+    fun `resolves to NotAvailable without throwing when videoId is blank, and never calls the port`() = runTest {
+        val fake = FakeVideoDetail(DetailResult.Success(detail))
+        val viewModel = DetailViewModel(videoId = "", getVideoDetail = GetVideoDetail(fake))
+
+        // Must not escape as an uncaught IllegalArgumentException from
+        // VideoId's require(non-blank) — a blank videoId is a deterministic
+        // NotAvailable state, not a crash.
+        mainScheduler.advanceUntilIdle()
+
+        assertEquals(DetailUiState.NotAvailable, viewModel.state.value)
+        assertEquals(0, fake.callCount)
+    }
 }
