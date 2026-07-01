@@ -39,16 +39,16 @@ fun TvVideoCard(
                 .aspectRatio(16f / 9f)
                 .background(Color(0xFF2B2B2B)),
         )
-        Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
+        Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleSmall,
-                maxLines = 1,
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
                 text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,

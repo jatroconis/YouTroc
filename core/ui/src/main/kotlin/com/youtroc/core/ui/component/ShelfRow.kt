@@ -31,13 +31,16 @@ fun ShelfRow(
             text = title,
             style = MaterialTheme.typography.headlineSmall,
             modifier = Modifier.padding(
-                start = YouTrocDimens.overscanHorizontal,
+                start = YouTrocDimens.railContentStart,
                 bottom = 12.dp,
             ),
         )
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(YouTrocDimens.cardSpacing),
-            contentPadding = PaddingValues(horizontal = YouTrocDimens.overscanHorizontal),
+            contentPadding = PaddingValues(
+                start = YouTrocDimens.railContentStart,
+                end = YouTrocDimens.overscanHorizontal,
+            ),
         ) {
             items(videos, key = { it.id }) { video ->
                 TvVideoCard(
