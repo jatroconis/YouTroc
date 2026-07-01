@@ -15,20 +15,21 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.DrawerValue
 import androidx.tv.material3.Icon
@@ -57,6 +58,13 @@ fun HomeShell() {
     val shelves = remember { fakeShelves() }
     var selectedIndex by remember { mutableIntStateOf(1) } // Home
     val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val firstCardFocus = remember { FocusRequester() }
+
+    // Start on the content (first card), not trapped in the rail. The rail is one
+    // D-pad press LEFT away, and content stays reachable with RIGHT.
+    LaunchedEffect(Unit) {
+        runCatching { firstCardFocus.requestFocus() }
+    }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -65,9 +73,6 @@ fun HomeShell() {
                 open = drawerValue == DrawerValue.Open,
                 selectedIndex = selectedIndex,
                 onSelect = { selectedIndex = it },
-                modifier = Modifier.onFocusChanged {
-                    drawerState.setValue(if (it.hasFocus) DrawerValue.Open else DrawerValue.Closed)
-                },
             )
         },
     ) {
@@ -90,11 +95,12 @@ fun HomeShell() {
                     verticalArrangement = Arrangement.spacedBy(YouTrocDimens.shelfSpacing),
                     contentPadding = PaddingValues(bottom = YouTrocDimens.overscanVertical),
                 ) {
-                    items(shelves, key = { it.title }) { shelf ->
+                    itemsIndexed(shelves, key = { _, shelf -> shelf.title }) { index, shelf ->
                         ShelfRow(
                             title = shelf.title,
                             videos = shelf.videos,
                             onVideoClick = { /* player destination lands in a later slice */ },
+                            firstCardFocusRequester = if (index == 0) firstCardFocus else null,
                         )
                     }
                 }
