@@ -1,5 +1,8 @@
 package com.youtroc.data.extraction
 
+import com.youtroc.core.domain.playback.ManifestInputs
+import com.youtroc.core.domain.playback.PlaybackManifest
+import com.youtroc.core.domain.playback.PlaybackSelectionPolicy
 import com.youtroc.core.domain.stream.PlayableStreams
 import com.youtroc.core.domain.stream.Stream
 import com.youtroc.core.domain.stream.StreamKind
@@ -11,7 +14,9 @@ import kotlinx.coroutines.withContext
 import org.schabi.newpipe.extractor.ServiceList
 import org.schabi.newpipe.extractor.exceptions.ContentNotAvailableException
 import org.schabi.newpipe.extractor.exceptions.ExtractionException
+import org.schabi.newpipe.extractor.stream.AudioStream
 import org.schabi.newpipe.extractor.stream.StreamInfo
+import org.schabi.newpipe.extractor.stream.VideoStream
 import java.io.IOException
 import kotlin.coroutines.cancellation.CancellationException
 import org.schabi.newpipe.extractor.stream.Stream as NewPipeStream
@@ -42,7 +47,7 @@ class NewPipeStreamProvider(
                     // not a healthy extraction: treat as "cannot play anonymously".
                     StreamResult.NotAvailable
                 } else {
-                    StreamResult.Success(PlayableStreams(streams))
+                    StreamResult.Success(PlayableStreams(streams, manifest(info, streams)))
                 }
             } catch (e: CancellationException) {
                 throw e // never swallow cooperative cancellation
@@ -58,6 +63,29 @@ class NewPipeStreamProvider(
             info.audioStreams.forEach { it.toDomainOrNull(StreamKind.AUDIO_ONLY)?.let(::add) }
         }
 
+    /**
+     * Assembling the DASH manifest is best-effort: a malformed/unusual itag
+     * never fails the whole extraction, it just degrades to
+     * PROGRESSIVE/MERGED delivery ([PlaybackSelectionPolicy] handles that
+     * fallback, and a lone video-only track is never selected).
+     */
+    private fun manifest(info: StreamInfo, streams: List<Stream>): PlaybackManifest? {
+        val dashMpd = try {
+            DashManifestAssembler.assemble(info)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            null
+        }
+        val inputs = ManifestInputs(
+            dashMpd = dashMpd,
+            muxedUrl = streams.filter { it.kind == StreamKind.MUXED }.bestByQualityOrNull()?.url,
+            videoOnlyUrl = streams.filter { it.kind == StreamKind.VIDEO_ONLY }.bestByQualityOrNull()?.url,
+            audioOnlyUrl = streams.filter { it.kind == StreamKind.AUDIO_ONLY }.bestByQualityOrNull()?.url,
+        )
+        return PlaybackSelectionPolicy.select(inputs)
+    }
+
     private fun NewPipeStream.toDomainOrNull(kind: StreamKind): Stream? {
         // getContent() is the URL for progressive streams or an inline manifest for DASH/HLS.
         val content = this.content
@@ -66,7 +94,22 @@ class NewPipeStreamProvider(
             url = content,
             container = format?.suffix.orEmpty(),
             kind = kind,
+            codec = codecOrNull(),
+            heightPx = heightOrNull(),
+            bitrateBps = bitrateOrNull(),
         )
+    }
+
+    private fun NewPipeStream.codecOrNull() =
+        (this as? VideoStream)?.codec?.let(::toDomainVideoCodec)
+
+    private fun NewPipeStream.heightOrNull(): Int? =
+        (this as? VideoStream)?.height?.takeIf { it > 0 }
+
+    private fun NewPipeStream.bitrateOrNull(): Int? = when (this) {
+        is VideoStream -> bitrate.takeIf { it > 0 }
+        is AudioStream -> bitrate.takeIf { it > 0 }
+        else -> null
     }
 
     private fun watchUrl(videoId: VideoId): String =
