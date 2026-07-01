@@ -64,6 +64,13 @@ dependencies {
     // HomeViewModel (see HomeViewModelFactory).
     implementation(project(":feature:catalog"))
 
+    // Search destination (RF-SRCH-01..04): same composition-root pattern —
+    // :app wires the concrete NewPipeVideoSearch adapter into :feature:search's
+    // SearchViewModel (see SearchViewModelFactory). :app never imports
+    // org.schabi.newpipe.* directly — ContentCountry is built inside
+    // :data:extraction only.
+    implementation(project(":feature:search"))
+
     // Compose for TV
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.tv.material)

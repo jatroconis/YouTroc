@@ -71,6 +71,7 @@ private val RailExpandedWidth = 240.dp
 @Composable
 fun HomeShell(
     onVideoClick: (VideoCardUi) -> Unit = {},
+    onOpenSearch: () -> Unit = {},
 ) {
     val vm: HomeViewModel = viewModel(factory = homeViewModelFactory())
     val state by vm.state.collectAsState()
@@ -128,6 +129,7 @@ fun HomeShell(
                 railFocused = railFocused,
                 selectedIndex = selectedIndex,
                 onSelect = { selectedIndex = it },
+                onOpenSearch = onOpenSearch,
                 contentFocus = contentFocus,
                 modifier = Modifier
                     .fillMaxHeight()
@@ -142,6 +144,7 @@ private fun NavRail(
     railFocused: Boolean,
     selectedIndex: Int,
     onSelect: (Int) -> Unit,
+    onOpenSearch: () -> Unit,
     contentFocus: FocusRequester,
     modifier: Modifier = Modifier,
 ) {
@@ -191,7 +194,10 @@ private fun NavRail(
             }
             Spacer(Modifier.height(16.dp))
 
-            RailItem(Icons.Default.Search, "Buscar", selectedIndex == 0, railFocused, contentFocus) { onSelect(0) }
+            RailItem(Icons.Default.Search, "Buscar", selectedIndex == 0, railFocused, contentFocus) {
+                onSelect(0)
+                onOpenSearch()
+            }
             RailItem(Icons.Default.Home, "Inicio", selectedIndex == 1, railFocused, contentFocus) { onSelect(1) }
 
             Spacer(Modifier.weight(1f))

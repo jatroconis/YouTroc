@@ -12,11 +12,13 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.youtroc.app.ui.player.PlayerScreen
 import com.youtroc.app.ui.player.PlayerViewModel
+import com.youtroc.app.ui.search.SearchRoute
 
 /**
- * The app's navigation graph. Two destinations for now: the Home shell and a
- * full-screen player. The title rides along the route (URL-encoded) so the player
- * can show it immediately, before extraction resolves.
+ * The app's navigation graph. Three destinations: the Home shell, the
+ * railless search screen, and a full-screen player. The title rides along
+ * the player route (URL-encoded) so the player can show it immediately,
+ * before extraction resolves.
  */
 @Composable
 fun AppNavHost() {
@@ -28,6 +30,16 @@ fun AppNavHost() {
                 onVideoClick = { video ->
                     navController.navigate("player/${video.id}?title=${Uri.encode(video.title)}")
                 },
+                onOpenSearch = { navController.navigate(ROUTE_SEARCH) },
+            )
+        }
+
+        composable(ROUTE_SEARCH) {
+            SearchRoute(
+                onVideoClick = { video ->
+                    navController.navigate("player/${video.id}?title=${Uri.encode(video.title)}")
+                },
+                onBack = { navController.popBackStack() },
             )
         }
 
@@ -60,3 +72,4 @@ fun AppNavHost() {
 }
 
 private const val ROUTE_HOME = "home"
+private const val ROUTE_SEARCH = "search"
