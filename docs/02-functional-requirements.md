@@ -1,6 +1,6 @@
-# Requerimientos Funcionales — youtroc
+# Requerimientos Funcionales — YouTroc
 
-> Propósito: definir QUÉ debe hacer youtroc (cliente de YouTube sin ads para Android TV) por módulo de feature y por fase, con identificadores estables y criterios de aceptación verificables.
+> Propósito: definir QUÉ debe hacer YouTroc (cliente de YouTube sin ads para Android TV) por módulo de feature y por fase, con identificadores estables y criterios de aceptación verificables.
 
 ## Tabla de contenidos
 
@@ -20,7 +20,7 @@
 
 ## Alcance y convenciones
 
-youtroc es un cliente de YouTube **sin ads por construcción**: nunca ejecuta el player oficial de Google, habla directamente con la API interna **InnerTube** vía el puerto `StreamProvider` e **ignora** los campos `adPlacements` / `playerAds` que devuelve InnerTube. No hay bloqueo por DNS ni MITM. Es de uso personal (sideload al TCL 55C6K), no para tiendas.
+YouTroc es un cliente de YouTube **sin ads por construcción**: nunca ejecuta el player oficial de Google, habla directamente con la API interna **InnerTube** vía el puerto `StreamProvider` e **ignora** los campos `adPlacements` / `playerAds` que devuelve InnerTube. No hay bloqueo por DNS ni MITM. Es de uso personal (sideload al TCL 55C6K), no para tiendas.
 
 Convenciones de este documento:
 

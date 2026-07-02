@@ -1,10 +1,10 @@
-# youtroc — Registro de Decisiones de Negocio (ADR)
+# YouTroc — Registro de Decisiones de Negocio (ADR)
 
-> Propósito: dejar por escrito, ANTES de escribir código, cada decisión de negocio y arquitectura que define a youtroc, con su contexto, razón, consecuencias y evidencia verificada.
+> Propósito: dejar por escrito, ANTES de escribir código, cada decisión de negocio y arquitectura que define a YouTroc, con su contexto, razón, consecuencias y evidencia verificada.
 
 ## Contexto del proyecto
 
-**youtroc** es un CLIENTE de YouTube sin anuncios para Android TV, construido desde cero. Es de uso personal (sideload), NO está destinado a tiendas de aplicaciones, y se trata como un proyecto serio y grande. El único usuario y dueño es el propio desarrollador.
+**YouTroc** es un CLIENTE de YouTube sin anuncios para Android TV, construido desde cero. Es de uso personal (sideload), NO está destinado a tiendas de aplicaciones, y se trata como un proyecto serio y grande. El único usuario y dueño es el propio desarrollador.
 
 Este documento es la fuente de verdad de las decisiones. Cada ADR es independiente y se puede revisar/superar más adelante manteniendo el historial. El orden de lectura recomendado es de ADR-0 hacia abajo: las primeras decisiones (ideología, hardware) condicionan a las siguientes.
 
@@ -66,7 +66,7 @@ Construir un cliente desde cero (camino B) que consume la API **InnerTube**. La 
 **Estado:** Aceptada
 
 **Contexto:**
-SmartTube y proyectos similares cargan el peso de la compatibilidad universal (cientos de modelos de TV box, SoCs viejos, Android TV antiguo). youtroc es para un único dueño con un único equipo conocido. Hay que decidir si optimizamos para "todo el mundo" o para un target concreto.
+SmartTube y proyectos similares cargan el peso de la compatibilidad universal (cientos de modelos de TV box, SoCs viejos, Android TV antiguo). YouTroc es para un único dueño con un único equipo conocido. Hay que decidir si optimizamos para "todo el mundo" o para un target concreto.
 
 **Decisión:**
 Tratar el **TCL 55C6K (2025)** como el ÚNICO target soportado y como el piso de capacidades. Nada por debajo de él importa. Eso libera al proyecto del lastre de compatibilidad universal y habilita el stack más moderno disponible.
@@ -108,10 +108,10 @@ Tratar el **TCL 55C6K (2025)** como el ÚNICO target soportado y como el piso de
 **Estado:** Aceptada
 
 **Contexto:**
-Hay que definir QUÉ producto es youtroc: una herramienta mínima, o una réplica completa de la experiencia de YouTube en TV. La definición del producto fija el alcance de las features.
+Hay que definir QUÉ producto es YouTroc: una herramienta mínima, o una réplica completa de la experiencia de YouTube en TV. La definición del producto fija el alcance de las features.
 
 **Decisión:**
-youtroc es una **réplica de la experiencia del cliente oficial de YouTube TV** (experiencia completa), tratada como un proyecto serio y grande, con expansión futura abierta.
+YouTroc es una **réplica de la experiencia del cliente oficial de YouTube TV** (experiencia completa), tratada como un proyecto serio y grande, con expansión futura abierta.
 
 **Razón:**
 - El dueño quiere reemplazar de verdad la app oficial en su TV, no un visor recortado.
@@ -147,7 +147,7 @@ FASE 1 (anónima) INCLUYE: home = feed de trending; búsqueda; detalle de video 
 - **Cliente mínimo (solo pegar un `videoId` y reproducir):** descartado como producto final; sí se usa como hito START interno, no como objetivo.
 
 **Evidencia (verificada):**
-- La viabilidad técnica de un cliente completo de TV está demostrada por SmartTube, que ofrece experiencia completa sobre Leanback + ExoPlayer; youtroc apunta a la misma amplitud con stack moderno.
+- La viabilidad técnica de un cliente completo de TV está demostrada por SmartTube, que ofrece experiencia completa sobre Leanback + ExoPlayer; YouTroc apunta a la misma amplitud con stack moderno.
 
 ---
 

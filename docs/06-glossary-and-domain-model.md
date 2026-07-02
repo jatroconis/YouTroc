@@ -1,14 +1,14 @@
-# Glosario y Modelo de Dominio — youtroc
+# Glosario y Modelo de Dominio — YouTroc
 
 > Propósito: fijar el vocabulario técnico del proyecto y el lenguaje ubicuo de `:core:domain`, de modo que puertos, adaptadores, features y conversaciones usen exactamente los mismos términos y significados.
 
-youtroc es un cliente de YouTube sin publicidad para Android TV, construido desde cero contra la API interna InnerTube. La ausencia de publicidad es **por construcción**: nunca ejecutamos el reproductor oficial de Google, así que simplemente ignoramos los campos `adPlacements`/`playerAds` que devuelve InnerTube. Este documento tiene dos partes: un **glosario técnico** (qué significa cada término que aparece en el proyecto) y el **modelo de dominio** (las entidades y value objects que viven en `:core:domain`, el módulo Kotlin puro del que dependen todos los demás).
+YouTroc es un cliente de YouTube sin publicidad para Android TV, construido desde cero contra la API interna InnerTube. La ausencia de publicidad es **por construcción**: nunca ejecutamos el reproductor oficial de Google, así que simplemente ignoramos los campos `adPlacements`/`playerAds` que devuelve InnerTube. Este documento tiene dos partes: un **glosario técnico** (qué significa cada término que aparece en el proyecto) y el **modelo de dominio** (las entidades y value objects que viven en `:core:domain`, el módulo Kotlin puro del que dependen todos los demás).
 
 ---
 
 ## Cómo leer este documento
 
-- **Parte 1 — Glosario técnico:** definiciones en español de los términos que se cruzan en extracción, reproducción, UI, build y sesión. Cada entrada dice *qué es* y *por qué importa en youtroc*.
+- **Parte 1 — Glosario técnico:** definiciones en español de los términos que se cruzan en extracción, reproducción, UI, build y sesión. Cada entrada dice *qué es* y *por qué importa en YouTroc*.
 - **Parte 2 — Modelo de dominio:** el lenguaje ubicuo de `:core:domain`. Para cada entidad o value object: su tipo, propósito, campos principales e invariantes. Es lo que las features conocen; los adaptadores en `:data:*` lo traducen desde/hacia InnerTube, Media3, OAuth, etc.
 - **Convención de identificadores:** los nombres técnicos (módulos `:core:domain`, puertos `StreamProvider`, tipos `PlayableStreams`, términos como InnerTube o DASH) se mantienen en inglés **exactamente** como en el código. La prosa explicativa está en español.
 - **Decisiones confirmadas:** los detalles de producto que antes figuraban como `(Asunción — a confirmar)` quedaron **TODOS resueltos** en la fecha de confirmación. Cada entrada conserva ahora la decisión afirmada en línea y la lista completa se recopila al final, en *Decisiones confirmadas (resueltas en la fecha de confirmación)*.
@@ -21,50 +21,50 @@ youtroc es un cliente de YouTube sin publicidad para Android TV, construido desd
 
 Estos términos giran alrededor del puerto `StreamProvider` y del adaptador `:data:extraction`, que es el diferenciador y el **riesgo #1** del proyecto (motor de extracción propio).
 
-| Término | Definición y relevancia en youtroc |
+| Término | Definición y relevancia en YouTroc |
 | --- | --- |
-| **InnerTube** | API interna y privada que usan las propias apps de YouTube (web, móvil, TV) para hablar con los servidores de Google. No es la YouTube Data API pública: no requiere API key de Google Cloud, pero sí emular un "cliente" (client name/version, contexto, cabeceras). Es la fuente de verdad de youtroc: de aquí salen feeds, búsqueda, metadatos de video y, sobre todo, las URLs de streams reproducibles. Las peticiones se emiten con `hl=es` (español) y `gl`/región heredada del dispositivo. Construir nuestro propio extractor InnerTube detrás de `StreamProvider` es el objetivo de aprendizaje y el diferenciador del producto. |
+| **InnerTube** | API interna y privada que usan las propias apps de YouTube (web, móvil, TV) para hablar con los servidores de Google. No es la YouTube Data API pública: no requiere API key de Google Cloud, pero sí emular un "cliente" (client name/version, contexto, cabeceras). Es la fuente de verdad de YouTroc: de aquí salen feeds, búsqueda, metadatos de video y, sobre todo, las URLs de streams reproducibles. Las peticiones se emiten con `hl=es` (español) y `gl`/región heredada del dispositivo. Construir nuestro propio extractor InnerTube detrás de `StreamProvider` es el objetivo de aprendizaje y el diferenciador del producto. |
 | **PoToken** (Proof of Origin Token) | Token que YouTube exige para validar que la petición de reproducción proviene de un cliente "legítimo" y no de un bot. Si falta o es inválido, los streams pueden venir degradados, vacíos o bloqueados. Generarlo/obtenerlo correctamente es uno de los obstáculos centrales del motor de extracción propio. |
 | **n-signature** (parámetro `n` / "throttling signature") | Parámetro cifrado en la URL del stream que YouTube ofusca mediante una función JavaScript embebida en su player. Si no se "resuelve" (descifra) correctamente, la descarga del video se estrangula (throttling) hasta volverse inservible. Resolver la n-signature es uno de los puntos de mantenimiento recurrente: cambia con frecuencia. |
 | **BotGuard** | Sistema antifraude/antibot de Google (basado en un VM de JavaScript ofuscado) que produce atestaciones de "no soy un bot". Está relacionado con la generación del PoToken. Es parte del muro que el extractor propio debe sortear y una causa típica de bloqueos "not a bot". |
-| **visitor-data** | Identificador de "visitante" anónimo que InnerTube asocia a una sesión sin login. Se obtiene al inicializar y se reenvía en peticiones posteriores para dar coherencia (y a veces para desbloquear contenido/streams). En youtroc lo gestiona el adaptador de extracción/sesión para la `Session.Anonymous` de la Fase 1; es un detalle de `:data:session` y **no se filtra al dominio**. |
-| **adPlacements / playerAds** | Campos de la respuesta de InnerTube que describen los anuncios a insertar (pre-roll, mid-roll, banners). **youtroc los ignora deliberadamente**: como nunca ejecutamos el player oficial de Google, no hay nada que los "inserte". Aquí reside el ad-free *por construcción*; no usamos bloqueo DNS ni MITM ni microG. |
+| **visitor-data** | Identificador de "visitante" anónimo que InnerTube asocia a una sesión sin login. Se obtiene al inicializar y se reenvía en peticiones posteriores para dar coherencia (y a veces para desbloquear contenido/streams). En YouTroc lo gestiona el adaptador de extracción/sesión para la `Session.Anonymous` de la Fase 1; es un detalle de `:data:session` y **no se filtra al dominio**. |
+| **adPlacements / playerAds** | Campos de la respuesta de InnerTube que describen los anuncios a insertar (pre-roll, mid-roll, banners). **YouTroc los ignora deliberadamente**: como nunca ejecutamos el player oficial de Google, no hay nada que los "inserte". Aquí reside el ad-free *por construcción*; no usamos bloqueo DNS ni MITM ni microG. |
 | **googlevideo CDN** | Red de distribución de contenido (dominios `*.googlevideo.com`) desde la que se descargan los bytes reales de audio y video. El detalle clave: los anuncios viajan por la **misma** CDN que el contenido, por eso bloquear por DNS no funciona para YouTube. Las URLs de stream resueltas por `StreamProvider` apuntan aquí. |
 
 ### Streaming y reproducción
 
 Términos del puerto `MediaPlayer` y del adaptador `:data:player` (Media3/ExoPlayer). La cadena de reproducción tiene tres capas: **decodificación** (la hace el hardware del SoC vía MediaCodec, nunca nosotros), **motor de reproducción** (Media3) y **UI de controles** (nuestra, en Compose for TV).
 
-| Término | Definición y relevancia en youtroc |
+| Término | Definición y relevancia en YouTroc |
 | --- | --- |
 | **DASH** (Dynamic Adaptive Streaming over HTTP) | Protocolo de streaming adaptativo en el que el audio y el video viajan en **pistas separadas** y en múltiples calidades, que el reproductor combina y conmuta según ancho de banda. YouTube sirve los formatos de mayor calidad en DASH con audio-only y video-only por separado. Esto explica por qué el dominio modela pistas separadas (ver `PlayableStreams`) y por qué el player necesita combinarlas. |
-| **ABR** (Adaptive Bitrate) | Estrategia por la que el reproductor **elige y conmuta automáticamente** la calidad de las pistas DASH según el ancho de banda y el hardware. En youtroc el ABR es **automático y acotado al hardware del C6K**, con preferencia de códec AV1 → VP9 → H.264. **No hay selector manual de calidad** en la primera iteración de Fase 1 (se evalúa después). |
+| **ABR** (Adaptive Bitrate) | Estrategia por la que el reproductor **elige y conmuta automáticamente** la calidad de las pistas DASH según el ancho de banda y el hardware. En YouTroc el ABR es **automático y acotado al hardware del C6K**, con preferencia de códec AV1 → VP9 → H.264. **No hay selector manual de calidad** en la primera iteración de Fase 1 (se evalúa después). |
 | **MergingMediaSource** | Componente de Media3/ExoPlayer que fusiona dos fuentes —una de **solo video** y otra de **solo audio**— en una sola reproducción sincronizada. Es la pieza concreta que une las pistas DASH separadas de YouTube. Vive en `:data:player`; el dominio solo expresa que existen pistas separadas, no cómo se fusionan. |
-| **MediaCodec** | API de Android que da acceso a los **decodificadores de hardware** del SoC. En el TCL 55C6K (MediaTek Pentonic 700) decodifica AV1/VP9/H.264 por hardware. youtroc NO implementa decodificación: la hace el chip. Configuramos un `MediaCodecSelector` *hardware-first* y `setEnableDecoderFallback(true)` por si un decodificador falla. |
-| **SurfaceView** | Vista de Android que pinta el video en una *surface* dedicada del compositor, en lugar de dentro del árbol de vistas (como `TextureView`). Es la opción correcta para video a pantalla completa en TV: menor consumo, mejor rendimiento y soporte limpio de HDR. youtroc usa SurfaceView, no TextureView. |
+| **MediaCodec** | API de Android que da acceso a los **decodificadores de hardware** del SoC. En el TCL 55C6K (MediaTek Pentonic 700) decodifica AV1/VP9/H.264 por hardware. YouTroc NO implementa decodificación: la hace el chip. Configuramos un `MediaCodecSelector` *hardware-first* y `setEnableDecoderFallback(true)` por si un decodificador falla. |
+| **SurfaceView** | Vista de Android que pinta el video en una *surface* dedicada del compositor, en lugar de dentro del árbol de vistas (como `TextureView`). Es la opción correcta para video a pantalla completa en TV: menor consumo, mejor rendimiento y soporte limpio de HDR. YouTroc usa SurfaceView, no TextureView. |
 
 ### UI y toolkit
 
-| Término | Definición y relevancia en youtroc |
+| Término | Definición y relevancia en YouTroc |
 | --- | --- |
-| **Leanback** | Antigua librería de AndroidX para construir UIs de Android TV (filas, tarjetas, navegación con D-pad). Está **oficialmente deprecada**. youtroc NO la usa; se menciona solo para contraste histórico y porque el paquete oficial de YouTube para TV es un app Leanback aparte (`com.google.android.youtube.tv`). |
-| **Compose for TV** | Toolkit declarativo de UI para Android TV (`androidx.tv` / `tv-material`) sobre Jetpack Compose, con foco, listas perezosas y componentes pensados para los 10 pies de distancia y el control remoto. Es el toolkit elegido para toda la UI de youtroc, incluida la **UI de controles del player** que construimos sobre el puerto `MediaPlayer`. En el C6K (3GB) el coste extra de RAM/GC de Compose es despreciable. |
-| **D-pad** (mando direccional) | Modelo de interacción del control remoto de TV. youtroc sigue las **convenciones estándar de Android TV / Google TV**: navegación por foco, OK selecciona, BACK retrocede y controles propios de play/pausa/seek durante la reproducción. **Sin atajos personalizados** en Fase 1. |
+| **Leanback** | Antigua librería de AndroidX para construir UIs de Android TV (filas, tarjetas, navegación con D-pad). Está **oficialmente deprecada**. YouTroc NO la usa; se menciona solo para contraste histórico y porque el paquete oficial de YouTube para TV es un app Leanback aparte (`com.google.android.youtube.tv`). |
+| **Compose for TV** | Toolkit declarativo de UI para Android TV (`androidx.tv` / `tv-material`) sobre Jetpack Compose, con foco, listas perezosas y componentes pensados para los 10 pies de distancia y el control remoto. Es el toolkit elegido para toda la UI de YouTroc, incluida la **UI de controles del player** que construimos sobre el puerto `MediaPlayer`. En el C6K (3GB) el coste extra de RAM/GC de Compose es despreciable. |
+| **D-pad** (mando direccional) | Modelo de interacción del control remoto de TV. YouTroc sigue las **convenciones estándar de Android TV / Google TV**: navegación por foco, OK selecciona, BACK retrocede y controles propios de play/pausa/seek durante la reproducción. **Sin atajos personalizados** en Fase 1. |
 
 ### Build y rendimiento
 
-| Término | Definición y relevancia en youtroc |
+| Término | Definición y relevancia en YouTroc |
 | --- | --- |
-| **Baseline Profile** | Lista de rutas de código "calientes" que se entrega con la app para que ART las compile a código nativo de forma anticipada (AOT), en vez de interpretarlas en el primer arranque. Reduce jank de arranque y de scroll. En youtroc es **práctica obligatoria desde el día uno**, específica para nuestra app. |
+| **Baseline Profile** | Lista de rutas de código "calientes" que se entrega con la app para que ART las compile a código nativo de forma anticipada (AOT), en vez de interpretarlas en el primer arranque. Reduce jank de arranque y de scroll. En YouTroc es **práctica obligatoria desde el día uno**, específica para nuestra app. |
 | **R8** | Compilador/optimizador y *shrinker* oficial de Android: elimina código muerto, ofusca y optimiza el bytecode. Usamos **R8 full mode** como práctica obligatoria de día uno, junto con el Baseline Profile, para que la app sea pequeña y rápida en el dispositivo objetivo. Las metas de rendimiento se miden **siempre en el C6K real** con R8 full + Baseline Profile. |
 
 ### Sesión y extras
 
-| Término | Definición y relevancia en youtroc |
+| Término | Definición y relevancia en YouTroc |
 | --- | --- |
-| **OAuth device-code** (OAuth 2.0 Device Authorization Grant) | Flujo de login pensado para dispositivos con entrada incómoda (TVs): la app muestra un código y el usuario lo introduce en `youtube.com/activate` desde el móvil/PC; al confirmar, el dispositivo recibe tokens. Es el estilo "SmartTube", **sin microG**. youtroc lo usa en la **Fase 2** detrás del puerto `SessionGateway` para habilitar home personalizado, suscripciones, historial remoto, acciones de cuenta y SponsorBlock. El riesgo de baneo de cuenta aplica **solo con sesión iniciada** → se recomienda una cuenta Google desechable (*burner*). |
-| **SponsorBlock** | Servicio comunitario que mantiene una base de datos colaborativa de segmentos no-contenido dentro de los videos (patrocinios, intros, outros, autopromoción, recordatorios de "suscríbete", tramos fuera de tema, previews, etc.), para **saltarlos o silenciarlos** automáticamente. Es una integración de terceros, no parte de YouTube. **Decisión confirmada:** youtroc SÍ lo integra, pero en **Fase 2**. El dominio **MODELA** los segmentos saltables desde ya (ver `SponsorSegment`) para tener el modelo listo; el adaptador/integración real de SponsorBlock (`:data:sponsorblock`) se entrega en **Fase 2**. NO está en Fase 1 ni en el vertical slice. |
-| **sideload** | Instalar una app en Android/Android TV directamente (APK), sin pasar por una tienda. Es el **único** método de distribución de youtroc: es de uso personal, no para tiendas, y el dueño es el único usuario. Trivial de hacer sobre su propio C6K. |
+| **OAuth device-code** (OAuth 2.0 Device Authorization Grant) | Flujo de login pensado para dispositivos con entrada incómoda (TVs): la app muestra un código y el usuario lo introduce en `youtube.com/activate` desde el móvil/PC; al confirmar, el dispositivo recibe tokens. Es el estilo "SmartTube", **sin microG**. YouTroc lo usa en la **Fase 2** detrás del puerto `SessionGateway` para habilitar home personalizado, suscripciones, historial remoto, acciones de cuenta y SponsorBlock. El riesgo de baneo de cuenta aplica **solo con sesión iniciada** → se recomienda una cuenta Google desechable (*burner*). |
+| **SponsorBlock** | Servicio comunitario que mantiene una base de datos colaborativa de segmentos no-contenido dentro de los videos (patrocinios, intros, outros, autopromoción, recordatorios de "suscríbete", tramos fuera de tema, previews, etc.), para **saltarlos o silenciarlos** automáticamente. Es una integración de terceros, no parte de YouTube. **Decisión confirmada:** YouTroc SÍ lo integra, pero en **Fase 2**. El dominio **MODELA** los segmentos saltables desde ya (ver `SponsorSegment`) para tener el modelo listo; el adaptador/integración real de SponsorBlock (`:data:sponsorblock`) se entrega en **Fase 2**. NO está en Fase 1 ni en el vertical slice. |
+| **sideload** | Instalar una app en Android/Android TV directamente (APK), sin pasar por una tienda. Es el **único** método de distribución de YouTroc: es de uso personal, no para tiendas, y el dueño es el único usuario. Trivial de hacer sobre su propio C6K. |
 
 ---
 

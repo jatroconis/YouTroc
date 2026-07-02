@@ -1,4 +1,4 @@
-# Requerimientos No Funcionales (NFR) — youtroc
+# Requerimientos No Funcionales (NFR) — YouTroc
 
 > Define los atributos de calidad medibles del cliente ad-free de YouTube para Android TV, cuantificados contra el único dispositivo objetivo (TCL 55C6K) y trazables a las decisiones de arquitectura y fasing.
 
@@ -6,7 +6,7 @@
 
 ## 1. Propósito y alcance
 
-Este documento describe **CÓMO** debe comportarse youtroc (atributos de calidad), no **QUÉ** hace (eso vive en los requerimientos funcionales). Cada requerimiento tiene un **ID estable** (`RNF-<CATEGORÍA>-NN`) para poder referenciarlo desde specs, tasks, pruebas y revisiones.
+Este documento describe **CÓMO** debe comportarse YouTroc (atributos de calidad), no **QUÉ** hace (eso vive en los requerimientos funcionales). Cada requerimiento tiene un **ID estable** (`RNF-<CATEGORÍA>-NN`) para poder referenciarlo desde specs, tasks, pruebas y revisiones.
 
 Reglas de lectura:
 
@@ -118,7 +118,7 @@ La mantenibilidad se sostiene sobre **fronteras impuestas por el compilador** (m
 
 ## 5. RNF de Seguridad y Privacidad (`RNF-SEG`)
 
-youtroc es de **uso personal**, sin tiendas, sin monetización. La privacidad es por diseño: **sin telemetría, sin ads, sin tracking**.
+YouTroc es de **uso personal**, sin tiendas, sin monetización. La privacidad es por diseño: **sin telemetría, sin ads, sin tracking**.
 
 | ID | Requerimiento | Objetivo | Verificación | Fase |
 |---|---|---|---|---|
@@ -166,7 +166,7 @@ El motor de extracción es el subsistema más frágil; necesita **diagnóstico**
 | ID | Requerimiento | Objetivo | Verificación | Fase |
 |---|---|---|---|---|
 | **RNF-DIST-01** | Distribución por sideload | El artefacto se instala por **sideload** directo al **TCL 55C6K**; trivial para el dueño (único usuario) | Instalación manual (adb/sideload) | Todas |
-| **RNF-DIST-02** | Fuera de tiendas | youtroc **no** se publica en app stores; no aplican requisitos de policy de tiendas | N/A (decisión de proyecto) | Todas |
+| **RNF-DIST-02** | Fuera de tiendas | YouTroc **no** se publica en app stores; no aplican requisitos de policy de tiendas | N/A (decisión de proyecto) | Todas |
 | **RNF-DIST-03** | Target único, sin probing de códec | Un único device objetivo libera de compatibilidad universal: **sin per-device codec probing** | Revisión de config del player | Todas |
 | **RNF-DIST-04** | Footprint de instalación modesto | APK release **modesto frente a los 32 GB de ROM** e índices locales acordes; sin assets innecesarios (objetivo cualitativo, sin tope numérico duro) | Tamaño de APK release | 1 |
 

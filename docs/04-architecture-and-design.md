@@ -1,4 +1,4 @@
-# Arquitectura y Diseño Técnico — youtroc
+# Arquitectura y Diseño Técnico — YouTroc
 
 > Cómo se estructura un cliente de YouTube sin ads para Android TV construido desde cero: módulos, puertos y adaptadores, el mecanismo anti-ads por construcción, el flujo de reproducción y el mapeo del stack.
 
@@ -108,7 +108,7 @@ Los puertos viven en `:core:domain` (interfaces). Los adaptadores los implementa
 
 ## Mecanismo anti-ads (sin ads POR CONSTRUCCIÓN)
 
-Esta es la decisión raíz del proyecto y la razón de existir de `youtroc`.
+Esta es la decisión raíz del proyecto y la razón de existir de `YouTroc`.
 
 Hay dos caminos para tener YouTube sin ads:
 

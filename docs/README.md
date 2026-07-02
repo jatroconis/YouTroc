@@ -1,6 +1,6 @@
-# youtroc — Suite de Especificación
+# YouTroc — Suite de Especificación
 
-> Índice maestro de la documentación de producto y arquitectura de **youtroc**: un cliente de YouTube para Android TV, sin anuncios *por construcción*, construido desde cero en Kotlin para el único dispositivo objetivo TCL 55C6K.
+> Índice maestro de la documentación de producto y arquitectura de **YouTroc**: un cliente de YouTube para Android TV, sin anuncios *por construcción*, construido desde cero en Kotlin para el único dispositivo objetivo TCL 55C6K.
 
 ---
 

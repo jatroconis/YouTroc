@@ -1,4 +1,4 @@
-# Diseño de UI — youtroc
+# Diseño de UI — YouTroc
 
 > Cómo se construye la interfaz: replicar el look del YouTube-for-TV **actual** (2025-2026) con Jetpack Compose for TV, mapeado a la arquitectura hexagonal + screaming + atomic design del proyecto. Verificado contra fuentes primarias.
 
@@ -6,7 +6,7 @@
 
 ## 1. El diseño objetivo
 
-youtroc replica el **YouTube-for-TV moderno**, el opuesto deliberado del look Leanback de SmartTube:
+YouTroc replica el **YouTube-for-TV moderno**, el opuesto deliberado del look Leanback de SmartTube:
 
 | | YouTube TV actual (lo que hacemos) | SmartTube (lo que rechazamos) |
 |---|---|---|

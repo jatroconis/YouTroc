@@ -1,4 +1,4 @@
-# Visión y Alcance — youtroc
+# Visión y Alcance — YouTroc
 
 > Cliente de YouTube para Android TV, sin anuncios por construcción, hecho desde cero en Kotlin para un único dispositivo objetivo (TCL 55C6K).
 
@@ -21,7 +21,7 @@ El bloqueo por DNS no es una alternativa válida para YouTube: los anuncios se s
 
 ## 2. Objetivo del producto
 
-Construir **youtroc**: un cliente de YouTube para Android TV, sin anuncios, que **replique la experiencia del cliente oficial de YouTube TV** (experiencia completa), pensado para uso personal vía sideload. No es una app para tiendas.
+Construir **YouTroc**: un cliente de YouTube para Android TV, sin anuncios, que **replique la experiencia del cliente oficial de YouTube TV** (experiencia completa), pensado para uso personal vía sideload. No es una app para tiendas.
 
 Se trata como un proyecto serio y grande, con la expansión futura abierta. El objetivo de aprendizaje principal y el diferenciador de producto es construir un **extractor InnerTube propio** desde cero.
 
@@ -55,7 +55,7 @@ El TCL 55C6K es el **suelo (floor)**: nada por debajo importa. Tener un único o
 
 ## 4. La DECISIÓN RAÍZ de ideología
 
-> **youtroc se construye como un cliente propio desde cero (vía B), no como un parche de la app oficial (vía A).**
+> **YouTroc se construye como un cliente propio desde cero (vía B), no como un parche de la app oficial (vía A).**
 
 Esta decisión fue verificada mediante investigación adversarial y es la raíz de todo el proyecto.
 
@@ -78,9 +78,9 @@ Esta decisión fue verificada mediante investigación adversarial y es la raíz 
 
 > **Superar a SmartTube usando el stack más moderno, gracias a tener un único objetivo de hardware.**
 
-SmartTube carga con el lastre de la compatibilidad universal (debe correr en TVs viejas y dispares). youtroc tiene un solo objetivo conocido (el C6K, hardware moderno de 2025), lo que permite adoptar deliberadamente el stack más actual sin concesiones de compatibilidad.
+SmartTube carga con el lastre de la compatibilidad universal (debe correr en TVs viejas y dispares). YouTroc tiene un solo objetivo conocido (el C6K, hardware moderno de 2025), lo que permite adoptar deliberadamente el stack más actual sin concesiones de compatibilidad.
 
-| Palanca | Cómo la aprovecha youtroc |
+| Palanca | Cómo la aprovecha YouTroc |
 |---|---|
 | UI | **Jetpack Compose for TV** (`androidx.tv` tv-material + Compose foundation lazy lists). Leanback está deprecado oficialmente. En 3 GB el delta de RAM/GC de Compose es negligible. |
 | Reproductor | **Media3/ExoPlayer** como motor de reproducción (infraestructura genérica, no se reimplementa); UI de controles **propia** en Compose. |
@@ -94,7 +94,7 @@ SmartTube carga con el lastre de la compatibilidad universal (debe correr en TVs
 
 ## 6. Alcance IN — qué hace la app
 
-Lo que youtroc **sí** hace (a través de sus fases):
+Lo que YouTroc **sí** hace (a través de sus fases):
 
 - **Reproducción sin anuncios** de videos de YouTube, resolviendo streams reproducibles vía InnerTube e ignorando los campos de anuncios (`StreamProvider`).
 - **Home / Trending** (catálogo de feeds) — `VideoCatalog`.
@@ -120,7 +120,7 @@ El puerto `StreamProvider` resuelve streams reproducibles **ignorando los campos
 
 ## 7. Alcance OUT / No-Goals — qué NO hace la app
 
-youtroc **explícitamente NO** hace lo siguiente:
+YouTroc **explícitamente NO** hace lo siguiente:
 
 | No-Goal | Razón |
 |---|---|
@@ -130,7 +130,7 @@ youtroc **explícitamente NO** hace lo siguiente:
 | **No soporta hardware por debajo del C6K** | El TCL 55C6K es el suelo. No hay compatibilidad universal estilo SmartTube. |
 | **No DNS blocking** | Falla para YouTube: los anuncios vienen del mismo CDN que el contenido. |
 | **No MITM** | No interceptamos tráfico TLS. |
-| **No microG** | Irrelevante: solo aplica a apps parcheadas. youtroc no parchea nada. |
+| **No microG** | Irrelevante: solo aplica a apps parcheadas. YouTroc no parchea nada. |
 | **No reimplementa el motor de reproducción** | Media3/ExoPlayer es infraestructura genérica y profundamente trabajada. Solo construimos la UI de controles. |
 | **No reimplementa la decodificación** | La decodificación la hace el hardware del SoC vía MediaCodec; nunca es nuestra. |
 | **No multiusuario / no soporte público** | Un único usuario: el dueño. |
@@ -150,7 +150,7 @@ Esto prueba la **hipótesis central** del proyecto el primer día: que el client
 **Reproducción sin anuncios**
 
 - **Dado** un video de YouTube con `adPlacements`/`playerAds` en la respuesta de InnerTube,
-- **Cuando** youtroc resuelve el stream vía `StreamProvider`,
+- **Cuando** YouTroc resuelve el stream vía `StreamProvider`,
 - **Entonces** esos campos de anuncios se ignoran y la reproducción no contiene anuncios.
 
 **Reproducción fluida en el C6K**

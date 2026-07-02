@@ -1,4 +1,4 @@
-# Roadmap y Registro de Riesgos — youtroc
+# Roadmap y Registro de Riesgos — YouTroc
 
 > Plan de entrega incremental (de la vertical slice sin UI a la experiencia completa con cuenta) y el registro de riesgos del proyecto, con su mitigación, para un cliente de YouTube sin anuncios en Android TV de uso personal (sideload).
 
