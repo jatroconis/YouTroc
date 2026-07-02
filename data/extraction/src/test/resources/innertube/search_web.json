@@ -1,0 +1,271 @@
+{
+  "responseContext": {
+    "unknownDriftField": "schema-drift-is-tolerated"
+  },
+  "estimatedResults": "1234567",
+  "contents": {
+    "twoColumnSearchResultsRenderer": {
+      "primaryContents": {
+        "sectionListRenderer": {
+          "contents": [
+            {
+              "itemSectionRenderer": {
+                "contents": [
+                  {
+                    "channelRenderer": {
+                      "channelId": "UCSJ4gkVC6NrvII8umztf0Ow",
+                      "title": {
+                        "simpleText": "Lofi Girl"
+                      }
+                    }
+                  },
+                  {
+                    "shelfRenderer": {
+                      "title": {
+                        "simpleText": "Lo último de Lofi Girl"
+                      }
+                    }
+                  },
+                  {
+                    "videoRenderer": {
+                      "videoId": "sF80I-TQiW0",
+                      "title": {
+                        "runs": [
+                          {
+                            "text": "90's Chill Lofi ☕️ Study Music Lofi Rain Chillhop Beats ☔️ Lofi Rain Playlist"
+                          }
+                        ],
+                        "accessibility": {
+                          "accessibilityData": {
+                            "label": "90's Chill Lofi ☕️ Study Music Lofi Rain Chillhop Beats ☔️ Lofi Rain Playlist 11 horas y 53 minutos"
+                          }
+                        }
+                      },
+                      "ownerText": {
+                        "runs": [
+                          {
+                            "text": "The Japanese Town",
+                            "navigationEndpoint": {
+                              "clickTrackingParams": "COkEENwwGAQiEwj1t6-TjrWVAxXv3tIEHWoXMRfKAQR2Ma2k",
+                              "commandMetadata": {
+                                "webCommandMetadata": {
+                                  "url": "/@TheJapaneseTown-jt6fy",
+                                  "webPageType": "WEB_PAGE_TYPE_CHANNEL",
+                                  "rootVe": 3611,
+                                  "apiUrl": "/youtubei/v1/browse"
+                                }
+                              },
+                              "browseEndpoint": {
+                                "browseId": "UCuS_-bvOCh4W5Sy11Uf4H5A",
+                                "canonicalBaseUrl": "/@TheJapaneseTown-jt6fy"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "viewCountText": {
+                        "simpleText": "25.463.189 visualizaciones"
+                      },
+                      "publishedTimeText": {
+                        "simpleText": "Emitido hace 2 años"
+                      },
+                      "thumbnail": {
+                        "thumbnails": [
+                          {
+                            "url": "https://i.ytimg.com/vi/sF80I-TQiW0/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLBb1dYFVW90Dj-LsqZOFQFZar5XWA",
+                            "width": 360,
+                            "height": 202
+                          },
+                          {
+                            "url": "https://i.ytimg.com/vi/sF80I-TQiW0/hq720.jpg?sqp=-oaymwEXCNAFEJQDSFryq4qpAwkIARUAAIhCGAE=&rs=AOn4CLDjlUuOYLaXBxJWHZSVFlilK8qb2A",
+                            "width": 720,
+                            "height": 404
+                          }
+                        ]
+                      },
+                      "lengthText": {
+                        "accessibility": {
+                          "accessibilityData": {
+                            "label": "11 horas, 53 minutos y 45 segundos"
+                          }
+                        },
+                        "simpleText": "11:53:45"
+                      },
+                      "shortViewCountText": {
+                        "accessibility": {
+                          "accessibilityData": {
+                            "label": "25 millones de visualizaciones"
+                          }
+                        },
+                        "simpleText": "25 M de visualizaciones"
+                      }
+                    }
+                  },
+                  {
+                    "videoRenderer": {
+                      "videoId": "4xDzrJKXOOY",
+                      "title": {
+                        "runs": [
+                          {
+                            "text": "radio synthwave 🌌 ritmos para relajarse/jugar"
+                          }
+                        ],
+                        "accessibility": {
+                          "accessibilityData": {
+                            "label": "radio synthwave 🌌 ritmos para relajarse/jugar"
+                          }
+                        }
+                      },
+                      "ownerText": {
+                        "runs": [
+                          {
+                            "text": "Lofi Girl",
+                            "navigationEndpoint": {
+                              "clickTrackingParams": "COQEENwwGAUiEwj1t6-TjrWVAxXv3tIEHWoXMRfKAQR2Ma2k",
+                              "commandMetadata": {
+                                "webCommandMetadata": {
+                                  "url": "/channel/UCSJ4gkVC6NrvII8umztf0Ow",
+                                  "webPageType": "WEB_PAGE_TYPE_CHANNEL",
+                                  "rootVe": 3611,
+                                  "apiUrl": "/youtubei/v1/browse"
+                                }
+                              },
+                              "browseEndpoint": {
+                                "browseId": "UCSJ4gkVC6NrvII8umztf0Ow",
+                                "canonicalBaseUrl": "/channel/UCSJ4gkVC6NrvII8umztf0Ow"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "viewCountText": {
+                        "runs": [
+                          {
+                            "text": "1932"
+                          },
+                          {
+                            "text": " usuarios"
+                          }
+                        ]
+                      },
+                      "publishedTimeText": null,
+                      "thumbnail": {
+                        "thumbnails": [
+                          {
+                            "url": "https://i.ytimg.com/vi/4xDzrJKXOOY/hq720.jpg?v=698f87d4&sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLAPNUr9X_H-jnTFUk5r03PIUGUyaA",
+                            "width": 360,
+                            "height": 202
+                          },
+                          {
+                            "url": "https://i.ytimg.com/vi/4xDzrJKXOOY/hq720.jpg?v=698f87d4&sqp=-oaymwEXCNAFEJQDSFryq4qpAwkIARUAAIhCGAE=&rs=AOn4CLA7SKLU99k8Kl8mTQeTnylsEaswQw",
+                            "width": 720,
+                            "height": 404
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "videoRenderer": {
+                      "videoId": "CFGLoQIhmow",
+                      "title": {
+                        "runs": [
+                          {
+                            "text": "lofi hip hop mix 📚 beats to relax/study to (Part 1)"
+                          }
+                        ],
+                        "accessibility": {
+                          "accessibilityData": {
+                            "label": "lofi hip hop mix 📚 beats to relax/study to (Part 1) 2 horas y 50 minutos"
+                          }
+                        }
+                      },
+                      "ownerText": {
+                        "runs": [
+                          {
+                            "text": "Lofi Girl",
+                            "navigationEndpoint": {
+                              "clickTrackingParams": "CJAEENwwGAciEwj1t6-TjrWVAxXv3tIEHWoXMRfKAQR2Ma2k",
+                              "commandMetadata": {
+                                "webCommandMetadata": {
+                                  "url": "/channel/UCSJ4gkVC6NrvII8umztf0Ow",
+                                  "webPageType": "WEB_PAGE_TYPE_CHANNEL",
+                                  "rootVe": 3611,
+                                  "apiUrl": "/youtubei/v1/browse"
+                                }
+                              },
+                              "browseEndpoint": {
+                                "browseId": "UCSJ4gkVC6NrvII8umztf0Ow",
+                                "canonicalBaseUrl": "/channel/UCSJ4gkVC6NrvII8umztf0Ow"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "viewCountText": {
+                        "simpleText": "7.679.964 visualizaciones"
+                      },
+                      "publishedTimeText": {
+                        "simpleText": "hace 1 año"
+                      },
+                      "thumbnail": {
+                        "thumbnails": [
+                          {
+                            "url": "https://i.ytimg.com/vi/CFGLoQIhmow/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLAeWMVLLwJnjFCoubIMw48BYsCErg",
+                            "width": 360,
+                            "height": 202
+                          },
+                          {
+                            "url": "https://i.ytimg.com/vi/CFGLoQIhmow/hq720.jpg?sqp=-oaymwEXCNAFEJQDSFryq4qpAwkIARUAAIhCGAE=&rs=AOn4CLBEFYODHUorBGSS7EfKNbOsxx0sBw",
+                            "width": 720,
+                            "height": 404
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "videoRenderer": {
+                      "videoId": "missingOptionalX",
+                      "title": {
+                        "runs": [
+                          {
+                            "text": "A video with sparse metadata"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "videoRenderer": {
+                      "title": {
+                        "runs": [
+                          {
+                            "text": "An item with no video id"
+                          }
+                        ]
+                      },
+                      "ownerText": {
+                        "runs": [
+                          {
+                            "text": "Some channel"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "continuationItemRenderer": {
+                "trackingParams": "unused-continuation-token"
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  "trackingParams": "unused-top-level-tracking-params"
+}

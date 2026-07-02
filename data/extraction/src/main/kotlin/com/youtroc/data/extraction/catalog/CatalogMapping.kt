@@ -27,8 +27,11 @@ internal fun Throwable.toCatalogResult(): CatalogResult = when (this) {
     else -> CatalogResult.Error(this)
 }
 
-private const val UNTITLED_VIDEO_PLACEHOLDER = "Untitled video"
-private const val UNKNOWN_CHANNEL_PLACEHOLDER = "Unknown channel"
+// internal (not private): reused by the InnerTube mapping in the innertube
+// package (com.youtroc.data.extraction.innertube.InnerTubeSearchMapping) so
+// both source-specific mappers coalesce blank fields to the same copy.
+internal const val UNTITLED_VIDEO_PLACEHOLDER = "Untitled video"
+internal const val UNKNOWN_CHANNEL_PLACEHOLDER = "Unknown channel"
 
 /**
  * Maps a kiosk [StreamInfoItem] onto the domain [Video]. Only [Video.id] is
