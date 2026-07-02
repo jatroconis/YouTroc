@@ -51,6 +51,7 @@ Convención compartida por toda la suite: los detalles de negocio que **las DECI
 | **#7 — No funcionales** | **Cerrada.** TDD activo (dominio con fakes detrás de los puertos), persistencia local Room/DataStore solo para ajustes (`SettingsStore`), favoritos (`FavoritesStore`) y continuar viendo (`WatchProgressStore`), distribución por sideload, motor propio como riesgo #1 con NewPipe como red de seguridad. Metas NFR confirmadas (arranque ≤ 2.5 s, primer frame ≤ 1.5 s, PSS ≤ 300 MB, jank < 1%). | [01 · Decisiones no funcionales](./01-business-decisions-adr.md), [03 · NFR](./03-non-functional-requirements.md) |
 | **#8 — Alcance de Fase 1 y detalles de producto** | **Cerrada (ADR-9).** Frontera Fase 1/Fase 2, datos locales, política de calidad ABR, SponsorBlock, captions, idioma InnerTube, manejo de errores, age-gated, D-pad y metas NFR. | [01 · ADR-9](./01-business-decisions-adr.md) |
 | **#9 — Diseño de UI** | **Cerrada.** Look YouTube-for-TV moderno (rail izquierdo colapsable + hero inmersivo **hand-built** + shelves + player propio) en Compose for TV; atomic design + container-presentational + `sealed UiState`. `Carousel` descartado para el hero (API experimental). | [07 · Diseño de UI](./07-ui-design.md) |
+| **ADR-10 — Pivote a multi-target + open-source** | YouTroc pasa a **open-source (GPL-3.0-or-later)** y a target **multi-target Android TV**; el TCL 55C6K queda como dispositivo de referencia/baseline. | [01 · ADR-10](./01-business-decisions-adr.md) |
 
 ### Detalles de producto (cerrados en la fecha de confirmación)
 

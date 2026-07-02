@@ -63,6 +63,8 @@ Construir un cliente desde cero (camino B) que consume la API **InnerTube**. La 
 
 ## ADR-1 — Target de hardware único: TCL 55C6K (2025)
 
+> **Estado:** parcialmente **superseded por ADR-10** — el C6K pasa de "piso y techo" a **dispositivo de referencia/baseline**; el objetivo es ahora multi-target Android TV.
+
 **Estado:** Aceptada
 
 **Contexto:**
@@ -489,6 +491,39 @@ Consolidar el alcance de FASE 1 y los detalles de producto asociados:
 
 ---
 
+## ADR-10 — Pivote a multi-target Android TV y liberación open-source
+
+**Estado:** Aceptada
+
+**Contexto:**
+El proyecto arrancó como cliente personal para un único equipo (ADR-1: TCL 55C6K como "piso y techo") y de uso personal por sideload. Con la Fase 1 funcional (VOD y streams en vivo validados on-device en el C6K), el dueño decide cambiar el horizonte: liberar el proyecto como open-source (en la línea de NewPipe/SmartTube) y apuntar a Android TV en general, no a un único equipo.
+
+**Decisión:**
+1. **Licencia.** YouTroc pasa a ser **open-source bajo GPL-3.0-or-later**.
+2. **Target de hardware.** El objetivo pasa a **multi-target Android TV** (minSdk 26); el **TCL 55C6K queda como dispositivo de referencia/baseline**, no como piso y techo.
+3. **Naturaleza del proyecto.** Sigue siendo un proyecto **educativo**, con un disclaimer honesto (no afiliado a YouTube/Google; el acceso por medios no oficiales puede infringir sus ToS).
+
+**Razón:**
+- La arquitectura ya es Android TV genérica (hexagonal, Media3 con fallback de códec AV1→VP9→H.264), sin lógica atada al C6K, así que multi-target es factible a bajo costo.
+- Abrir el código habilita colaboración y pruebas en más equipos (hoy el gap #1 es la validación en un solo dispositivo).
+- La licencia GPL-3.0 **no es realmente opcional**: NewPipeExtractor —del que depende la extracción— es GPLv3+ (copyleft), así que el proyecto debe ser GPLv3-compatible; además es la norma del ecosistema.
+
+**Consecuencias:**
+- (−) Supersede la parte de **ADR-1** que fijaba "único dispositivo / piso y techo" (el C6K ahora es baseline de referencia).
+- (−) Deja sin efecto el encuadre de "uso estrictamente personal / no redistribuir"; el sideload sigue siendo el método de distribución, ahora vía **releases públicas en GitHub**.
+- (−) Aparecen necesidades nuevas: `LICENSE`, `CONTRIBUTING`, CI, plantillas de issue/PR, versionado semántico (primer release **v0.1.0-alpha**) y compatibilidad más amplia a validar con la comunidad.
+- (+) **No cambia** la ideología ad-free-por-construcción (ADR-0) ni el resto del stack.
+
+**Alternativas consideradas:**
+- **Seguir personal/privado:** descartado por decisión del dueño.
+- **Licencia permisiva (MIT/Apache):** descartada; **incompatible** con el copyleft GPLv3+ de NewPipeExtractor.
+
+**Evidencia (verificada):**
+- El POM de `com.github.TeamNewPipe:NewPipeExtractor:v0.26.3` declara "GNU General Public License v3.0 or later".
+- Reproducción VOD + live validada on-device en el C6K.
+
+---
+
 ## Resumen de trazabilidad
 
 | ADR | Decisión | Estado |
@@ -504,3 +539,4 @@ Consolidar el alcance de FASE 1 y los detalles de producto asociados:
 | ADR-8 | Kotlin 100%; Rust descartado | Aceptada |
 | ADR-9 (#8) | Alcance de FASE 1 y detalles de producto | Aceptada |
 | #7 | No funcionales (TDD, persistencia, distribución) | Cerrada (Aceptada) |
+| ADR-10 | Pivote a multi-target Android TV y liberación open-source (GPL-3.0-or-later) | Aceptada |

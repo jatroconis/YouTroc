@@ -163,6 +163,8 @@ El motor de extracción es el subsistema más frágil; necesita **diagnóstico**
 
 ## 8. RNF de Distribución (`RNF-DIST`)
 
+> Actualización: ver **ADR-10** — distribución ahora por releases open-source en GitHub; el sideload directo al dispositivo sigue vigente como método de instalación.
+
 | ID | Requerimiento | Objetivo | Verificación | Fase |
 |---|---|---|---|---|
 | **RNF-DIST-01** | Distribución por sideload | El artefacto se instala por **sideload** directo al **TCL 55C6K**; trivial para el dueño (único usuario) | Instalación manual (adb/sideload) | Todas |

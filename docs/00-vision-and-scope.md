@@ -23,6 +23,8 @@ El bloqueo por DNS no es una alternativa válida para YouTube: los anuncios se s
 
 Construir **YouTroc**: un cliente de YouTube para Android TV, sin anuncios, que **replique la experiencia del cliente oficial de YouTube TV** (experiencia completa), pensado para uso personal vía sideload. No es una app para tiendas.
 
+> Actualización: ver **ADR-10** — el proyecto pasó a multi-target Android TV y open-source (GPL-3.0); el C6K queda como referencia.
+
 Se trata como un proyecto serio y grande, con la expansión futura abierta. El objetivo de aprendizaje principal y el diferenciador de producto es construir un **extractor InnerTube propio** desde cero.
 
 ---
