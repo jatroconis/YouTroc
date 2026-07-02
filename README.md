@@ -2,7 +2,7 @@
 
 Cliente **open-source de YouTube para Android TV**, sin anuncios *por construcción*, escrito desde cero en Kotlin con Clean / Hexagonal / Screaming Architecture, Jetpack Compose for TV y Media3.
 
-Es un proyecto **educativo y de código abierto**: nació para aprender arquitectura de software construyendo un producto real, y se desarrolla a la vista de todos. En la línea de proyectos como NewPipe o SmartTube, pero con un stack moderno y una arquitectura hexagonal estricta.
+Es un **proyecto open-source serio**, construido desde cero con arquitectura hexagonal estricta y un stack moderno, y desarrollado a la vista de todos. En la línea de NewPipe o SmartTube, pero apostando a un código limpio, modular y testeable como base para crecer hacia una alternativa real.
 
 > **Estado: `alpha` (v0.1.0-alpha).** Reproduce videos VOD y streams en vivo de verdad, pero es software temprano: varias funciones están completas a nivel de código pero aún sin validar en dispositivo, y hasta ahora solo se probó en un equipo (ver [Dispositivos](#dispositivos-probados)). Se agradecen reportes y pruebas en otros Android TV.
 
@@ -10,7 +10,7 @@ Es un proyecto **educativo y de código abierto**: nació para aprender arquitec
 
 ## Aviso legal
 
-YouTroc **no está afiliado, asociado ni respaldado** por YouTube, Google o sus marcas. Es un cliente alternativo con fines **educativos**. Acceder a YouTube por medios no oficiales **puede infringir sus Términos de Servicio**; se distribuye sin garantías y cada quien es responsable del uso que le dé. Ad-free *por construcción*: nunca ejecuta el reproductor oficial de Google, así que simplemente ignora los campos de anuncios que devuelve la API interna — no hay bloqueo por DNS, MITM ni parcheo de apps.
+YouTroc **no está afiliado, asociado ni respaldado** por YouTube, Google o sus marcas: es un **cliente no oficial**. Acceder a YouTube por medios no oficiales **puede infringir sus Términos de Servicio**; se distribuye sin garantías y cada quien es responsable del uso que le dé. Ad-free *por construcción*: nunca ejecuta el reproductor oficial de Google, así que simplemente ignora los campos de anuncios que devuelve la API interna — no hay bloqueo por DNS, MITM ni parcheo de apps.
 
 ---
 

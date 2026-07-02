@@ -1,6 +1,6 @@
 # Contribuir a YouTroc
 
-¡Gracias por tu interés! YouTroc es un proyecto educativo y open-source. Toda ayuda suma — desde probar en un TV distinto hasta corregir un bug o sumar una feature.
+¡Gracias por tu interés! YouTroc es un proyecto **open-source** que apunta a ser una alternativa real y bien construida. Toda ayuda suma — desde probar en un TV distinto hasta corregir un bug o sumar una feature.
 
 ## Formas de contribuir
 
