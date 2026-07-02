@@ -1,4 +1,4 @@
-package com.youtroc.feature.video
+package com.youtroc.feature.playback.upnext
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -11,22 +11,24 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 /**
- * Container that drives [GetVideoDetail] for the video-detail screen. Knows
- * only the domain use case — never NewPipe/`:data:extraction` — so it is
- * fully testable with a fake [com.youtroc.core.domain.detail.VideoDetail]
- * wrapped in a real [GetVideoDetail] (mirrors
- * [com.youtroc.feature.catalog.HomeViewModel]).
+ * Container that drives [GetVideoDetail] for the in-player Info+Up-Next
+ * panel. Knows only the domain use case — never NewPipe/`:data:extraction` —
+ * so it is fully testable with a fake [com.youtroc.core.domain.detail.VideoDetail]
+ * wrapped in a real [GetVideoDetail] (mirrors [com.youtroc.feature.catalog.HomeViewModel]).
  *
- * Auto-loads in `init` — like `HomeViewModel`, NOT `Idle` like
- * `SearchViewModel` (a videoId is always available when this screen opens,
- * there is no "no query yet" state to represent).
+ * LAZY, session-cached resolution (REQ-U3, design D5, gate R5) — re-homed
+ * from the deleted `:feature:video` module's `DetailViewModel`, which
+ * auto-loaded in `init`. This ViewModel MUST NOT call [GetVideoDetail] at
+ * construction (playback start / overlay reveal) — only [ensureLoaded],
+ * triggered by the panel gaining focus for the first time, does. A second
+ * [ensureLoaded] call reuses the cached result instead of re-fetching.
  *
  * [videoId] is kept a plain `String` (NOT [VideoId]) and only converted
- * inside [load]'s coroutine — gate-review correction #3: [VideoId]'s
- * `require(non-blank)` init check must not throw at construction time,
- * mirrors [com.youtroc.app.ui.player.PlayerViewModel].
+ * inside [load]'s coroutine — [VideoId]'s `require(non-blank)` init check
+ * must not throw at construction time, mirrors
+ * [com.youtroc.app.ui.player.PlayerViewModel].
  */
-class DetailViewModel(
+class UpNextViewModel(
     private val videoId: String,
     private val getVideoDetail: GetVideoDetail,
 ) : ViewModel() {
@@ -34,7 +36,12 @@ class DetailViewModel(
     private val _state = MutableStateFlow<DetailUiState>(DetailUiState.Loading)
     val state: StateFlow<DetailUiState> = _state.asStateFlow()
 
-    init {
+    private var loaded = false
+
+    /** Idempotent, cached first-load trigger — called from `onPanelOpened` when the panel gains focus. */
+    fun ensureLoaded() {
+        if (loaded) return
+        loaded = true
         load()
     }
 
@@ -64,6 +71,6 @@ class DetailViewModel(
         }
     }
 
-    /** Re-runs [load] — the NotAvailable/Offline/Error retry action. */
+    /** Re-runs [load] — the NotAvailable/Offline/Error retry action. Re-invokes the port regardless of cache state. */
     fun retry() = load()
 }

@@ -1,4 +1,4 @@
-package com.youtroc.feature.video
+package com.youtroc.feature.playback.upnext
 
 import com.youtroc.core.domain.detail.DetailResult
 import com.youtroc.core.domain.detail.VideoDetail
@@ -7,7 +7,7 @@ import kotlinx.coroutines.delay
 
 /**
  * Local in-memory test double for the domain [VideoDetail] port. Test source
- * sets aren't shared across Gradle modules, so `:feature:video` cannot see
+ * sets aren't shared across Gradle modules, so `:feature:playback` cannot see
  * `:core:domain`'s own test-only `FakeVideoDetail` — mirrors
  * `:feature:search`'s local `FakeVideoSearch` fixture pattern.
  *
@@ -17,7 +17,7 @@ import kotlinx.coroutines.delay
  * never faked itself.
  *
  * [detail] suspends via a 1ms virtual [delay] (rather than returning
- * immediately) so [DetailViewModel]'s transient `Loading` state is a REAL,
+ * immediately) so [UpNextViewModel]'s transient `Loading` state is a REAL,
  * externally observable suspension point under `StandardTestDispatcher` —
  * `TestCoroutineScheduler.runCurrent()` stops right at it, letting tests
  * assert `Loading` before advancing time to the final result (mirrors

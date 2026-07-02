@@ -1,4 +1,4 @@
-package com.youtroc.feature.video
+package com.youtroc.feature.playback.upnext
 
 import com.youtroc.core.domain.catalog.Video
 import com.youtroc.core.domain.detail.VideoDetailInfo

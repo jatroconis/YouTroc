@@ -1,4 +1,4 @@
-package com.youtroc.feature.video
+package com.youtroc.feature.playback.upnext
 
 import kotlin.test.Test
 import kotlin.test.assertEquals

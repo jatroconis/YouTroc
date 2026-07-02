@@ -1,9 +1,9 @@
-package com.youtroc.feature.video
+package com.youtroc.feature.playback.upnext
 
 import com.youtroc.core.ui.component.VideoCardUi
 
 /**
- * Deterministic states the video-detail screen can render. Mirrors the
+ * Deterministic states the Info+Up-Next panel can render. Mirrors the
  * domain's [com.youtroc.core.domain.detail.DetailResult] vocabulary 1:1 —
  * NO `Empty` case (an empty [VideoDetailUi.related] list is still valid
  * [Content], mirrors [com.youtroc.feature.catalog.HomeUiState]'s auto-load
