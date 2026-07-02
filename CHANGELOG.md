@@ -29,5 +29,5 @@ y hasta ahora solo se probó en el TCL 55C6K.
 - El motor de extracción es todavía el andamio **NewPipeExtractor** (motor InnerTube propio pendiente).
 - Sin cuenta / login (Fase 2): sin home personalizado, suscripciones, subtítulos ni SponsorBlock.
 
-[Unreleased]: https://github.com/jatroconis/youtroc/compare/v0.1.0-alpha...HEAD
-[0.1.0-alpha]: https://github.com/jatroconis/youtroc/releases/tag/v0.1.0-alpha
+[Unreleased]: https://github.com/jatroconis/YouTroc/compare/v0.1.0-alpha...HEAD
+[0.1.0-alpha]: https://github.com/jatroconis/YouTroc/releases/tag/v0.1.0-alpha
