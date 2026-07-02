@@ -16,6 +16,7 @@ import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.dash.DashMediaSource
 import androidx.media3.exoplayer.dash.manifest.DashManifestParser
+import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
 import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.MergingMediaSource
@@ -128,6 +129,9 @@ class Media3MediaPlayer(context: Context) : MediaPlayerPort {
     /** User-pinned height intent; `null` means Automatic (ABR). Drives [PlaybackState.activeQuality]. */
     private var pinnedHeight: Int? = null
 
+    /** True when the active manifest is a live delivery (LIVE_HLS/LIVE_DASH); set in [setMedia] BEFORE `prepare()` so the first [publishState] reflects it. Source of truth is the manifest kind, not ExoPlayer timing (S1). */
+    private var isLive = false
+
     init {
         player.addListener(
             object : Player.Listener {
@@ -180,6 +184,8 @@ class Media3MediaPlayer(context: Context) : MediaPlayerPort {
         // REQ-Q6: each new video starts on Automatic; the prior video's pin never carries over.
         applyAutoWindow()
         availableQualities = emptyList()
+        // S1: set BEFORE setMediaSource()/prepare() so the first publishState() already reflects live.
+        isLive = manifest.kind.isLive
         val startPositionMs = startAt?.positionMs ?: C.TIME_UNSET
         player.setMediaSource(mediaSourceFor(manifest), startPositionMs)
         player.prepare()
@@ -237,6 +243,9 @@ class Media3MediaPlayer(context: Context) : MediaPlayerPort {
             progressiveMediaSource(manifest.payload),
             progressiveMediaSource(requireNotNull(manifest.secondaryAudioUrl)),
         )
+        PlaybackManifest.Kind.LIVE_HLS -> HlsMediaSource.Factory(dataSourceFactory)
+            .createMediaSource(MediaItem.fromUri(manifest.payload))
+        PlaybackManifest.Kind.LIVE_DASH -> liveDashMediaSource(manifest.payload)
     }
 
     private fun dashMediaSource(mpdXml: String): DashMediaSource {
@@ -247,6 +256,16 @@ class Media3MediaPlayer(context: Context) : MediaPlayerPort {
         return DashMediaSource.Factory(dataSourceFactory)
             .createMediaSource(dashManifest, MediaItem.fromUri(Uri.EMPTY))
     }
+
+    /**
+     * Live DASH: [mpdUrl] is fetched at playback time via the URL-based
+     * [DashMediaSource.Factory.createMediaSource] overload — distinct from
+     * [dashMediaSource]'s inline-XML VOD path, which already has the MPD
+     * assembled in-memory and never re-fetches it.
+     */
+    private fun liveDashMediaSource(mpdUrl: String): DashMediaSource =
+        DashMediaSource.Factory(dataSourceFactory)
+            .createMediaSource(MediaItem.fromUri(mpdUrl))
 
     private fun progressiveMediaSource(url: String): ProgressiveMediaSource =
         ProgressiveMediaSource.Factory(dataSourceFactory)
@@ -277,13 +296,16 @@ class Media3MediaPlayer(context: Context) : MediaPlayerPort {
             }
 
     private fun publishState() {
+        val pinnedQuality = pinnedHeight?.let { pinned -> availableQualities.firstOrNull { it.heightPx == pinned } }
         mutableState.value = PlaybackState(
             phase = PlaybackPhaseMapper.map(player.playbackState, hasError = player.playerError != null),
             isPlaying = player.isPlaying,
             positionMs = player.currentPosition,
             durationMs = player.duration.takeIf { it != C.TIME_UNSET } ?: 0L,
-            availableQualities = availableQualities,
-            activeQuality = pinnedHeight?.let { pinned -> availableQualities.firstOrNull { it.heightPx == pinned } },
+            // R1: quality degrade for live happens HERE, at the source — never in the overlay.
+            availableQualities = LiveQualityDegrade.qualities(isLive, availableQualities),
+            activeQuality = LiveQualityDegrade.active(isLive, pinnedQuality),
+            isLive = isLive,
         )
     }
 

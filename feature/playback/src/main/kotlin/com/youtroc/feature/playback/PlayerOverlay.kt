@@ -143,6 +143,7 @@ fun PlayerOverlay(
     activeQuality: VideoQuality? = null,
     onSelectQuality: (VideoQuality) -> Unit = {},
     onSelectAuto: () -> Unit = {},
+    isLive: Boolean = false,
 ) {
     var overlayState by remember { mutableStateOf<OverlayState>(OverlayState.Hidden) }
     var controlsFocused by remember { mutableStateOf(false) }
@@ -272,7 +273,9 @@ fun PlayerOverlay(
                     }
 
                     is DpadAction.Seek -> {
-                        currentOnSeek(action.deltaMs)
+                        // REQ-L7: pure-live has no scrubbing — L/R still keeps the
+                        // overlay alive (registerActivity) but never seeks.
+                        if (!isLive) currentOnSeek(action.deltaMs)
                         registerActivity()
                         true
                     }
@@ -317,7 +320,11 @@ fun PlayerOverlay(
                     },
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                Scrubber(positionMs = playbackState.positionMs, durationMs = playbackState.durationMs)
+                if (isLive) {
+                    LiveIndicator()
+                } else {
+                    Scrubber(positionMs = playbackState.positionMs, durationMs = playbackState.durationMs)
+                }
 
                 TransportRow(
                     isPlaying = playbackState.isPlaying,
@@ -442,6 +449,31 @@ private fun Scrubber(positionMs: Long, durationMs: Long, modifier: Modifier = Mo
             color = OnDarkMuted,
             style = MaterialTheme.typography.labelMedium,
         )
+    }
+}
+
+/**
+ * Pure-live replacement for [Scrubber] (REQ-L6/REQ-L7): a full-width bar
+ * snapped to the live edge (fraction = 1f, no position/duration progress)
+ * plus a red "EN VIVO" pill. Deliberately non-focusable — no `.focusable()`
+ * modifier — so it never traps D-pad focus.
+ */
+@Composable
+private fun LiveIndicator(modifier: Modifier = Modifier) {
+    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(4.dp)
+                .background(YouTrocRed, RoundedCornerShape(2.dp)),
+        )
+        Box(
+            modifier = Modifier
+                .background(YouTrocRed, RoundedCornerShape(4.dp))
+                .padding(horizontal = 10.dp, vertical = 4.dp),
+        ) {
+            Text(text = "EN VIVO", color = OnDark, style = MaterialTheme.typography.labelMedium)
+        }
     }
 }
 

@@ -104,6 +104,7 @@ fun PlaybackRoute(
             activeQuality = playbackState.activeQuality,
             onSelectQuality = playbackViewModel::onSelectQuality,
             onSelectAuto = playbackViewModel::onSelectAuto,
+            isLive = playbackState.isLive,
             // No related-videos/queue destination in FASE 1 (spec Non-Goals):
             // prev/next/like/dislike/captions stay PlayerOverlay's default
             // no-ops until that feature exists.
