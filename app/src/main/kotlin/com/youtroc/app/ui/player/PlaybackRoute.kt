@@ -17,11 +17,13 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.youtroc.app.YouTrocApp
 import com.youtroc.core.domain.playback.PlaybackManifest
 import com.youtroc.core.domain.video.VideoId
+import com.youtroc.core.ui.component.VideoCardUi
 import com.youtroc.data.persistence.DataStoreWatchProgressStore
 import com.youtroc.data.player.Media3MediaPlayer
 import com.youtroc.data.player.PlayerSurface
 import com.youtroc.feature.playback.PlaybackViewModel
 import com.youtroc.feature.playback.PlayerOverlay
+import com.youtroc.feature.playback.upnext.UpNextViewModel
 
 /**
  * Composition root for a resolved playback session (REQ-8..14): the only
@@ -39,12 +41,22 @@ import com.youtroc.feature.playback.PlayerOverlay
  * survives, leaving the retained ViewModel driving an already-released
  * player. [playbackViewModel]`.player` reads back that SAME entry-scoped
  * instance for [PlayerSurface] instead.
+ *
+ * Also builds the entry-scoped [UpNextViewModel] (player-upnext REQ-U3,
+ * design D5) via [upNextViewModelFactory] — the SAME composition-root seam
+ * already injecting [Media3MediaPlayer]/[DataStoreWatchProgressStore], kept
+ * as a SEPARATE ViewModel/lifecycle from [PlaybackViewModel] (Media3 engine
+ * vs. detail extraction are different responsibilities). Its
+ * [UpNextViewModel.ensureLoaded] is wired to [PlayerOverlay]'s
+ * `onPanelOpened`, so `GetVideoDetail` is invoked lazily on the FIRST panel
+ * open, never at playback start.
  */
 @Composable
 fun PlaybackRoute(
     videoId: String,
     manifest: PlaybackManifest,
     title: String,
+    onUpNextClick: (VideoCardUi) -> Unit = {},
 ) {
     val context = LocalContext.current
     val appScope = remember { (context.applicationContext as YouTrocApp).applicationScope }
@@ -58,6 +70,8 @@ fun PlaybackRoute(
             appScope = appScope,
         ),
     )
+    val upNextViewModel: UpNextViewModel = viewModel(factory = upNextViewModelFactory(videoId))
+    val upNextState by upNextViewModel.state.collectAsState()
     // MAJOR M1: the concrete adapter the factory built for the ViewModel —
     // read back here (never re-constructed) so PlayerSurface renders into the
     // exact engine the ViewModel drives. Safe: this factory is the ONLY
@@ -105,9 +119,14 @@ fun PlaybackRoute(
             onSelectQuality = playbackViewModel::onSelectQuality,
             onSelectAuto = playbackViewModel::onSelectAuto,
             isLive = playbackState.isLive,
-            // No related-videos/queue destination in FASE 1 (spec Non-Goals):
+            // player-upnext REQ-U1..U6: in-player Info+Up-Next panel state
+            // and callbacks — see the UpNextViewModel KDoc above.
+            upNextState = upNextState,
+            onUpNextClick = onUpNextClick,
+            onUpNextRetry = upNextViewModel::retry,
+            onPanelOpened = upNextViewModel::ensureLoaded,
             // prev/next/like/dislike/captions stay PlayerOverlay's default
-            // no-ops until that feature exists.
+            // no-ops until that feature exists (spec Non-Goals).
         )
     }
 }

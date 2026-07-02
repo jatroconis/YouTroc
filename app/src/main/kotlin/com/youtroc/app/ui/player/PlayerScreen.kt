@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Button
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import com.youtroc.core.ui.component.VideoCardUi
 import com.youtroc.core.ui.theme.OnDark
 import com.youtroc.core.ui.theme.OnDarkMuted
 import com.youtroc.core.ui.theme.YouTrocRed
@@ -59,6 +60,7 @@ fun PlayerScreen(
     state: PlayerUiState,
     onBack: () -> Unit,
     onRetry: () -> Unit,
+    onUpNextClick: (VideoCardUi) -> Unit = {},
 ) {
     BackHandler(onBack = onBack)
 
@@ -72,6 +74,7 @@ fun PlayerScreen(
                 videoId = videoId,
                 manifest = state.manifest,
                 title = state.title,
+                onUpNextClick = onUpNextClick,
             )
 
             PlayerUiState.Loading -> StatusView(

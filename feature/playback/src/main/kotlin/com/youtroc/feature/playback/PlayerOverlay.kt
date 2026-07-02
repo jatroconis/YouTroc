@@ -17,10 +17,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ClosedCaption
 import androidx.compose.material.icons.filled.Pause
@@ -57,6 +60,7 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.Icon
@@ -65,6 +69,7 @@ import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import com.youtroc.core.domain.playback.PlaybackState
 import com.youtroc.core.domain.playback.VideoQuality
+import com.youtroc.core.ui.component.VideoCardUi
 import com.youtroc.core.ui.theme.OnDark
 import com.youtroc.core.ui.theme.OnDarkMuted
 import com.youtroc.core.ui.theme.YouTrocRed
@@ -78,6 +83,8 @@ import com.youtroc.feature.playback.overlay.SeekAmount
 import com.youtroc.feature.playback.overlay.decideDpadAction
 import com.youtroc.feature.playback.quality.QualityMenu
 import com.youtroc.feature.playback.settings.SettingsMenu
+import com.youtroc.feature.playback.upnext.DetailUiState
+import com.youtroc.feature.playback.upnext.InfoUpNextPanel
 import kotlinx.coroutines.delay
 
 /**
@@ -130,6 +137,20 @@ import kotlinx.coroutines.delay
  * auto-hide is suppressed, and a nested [BackHandler] — composed AFTER the
  * overlay's own, so LIFO makes it win — unwinds exactly one level per press
  * (REQ-S4), restoring focus to the row that opened the closed panel.
+ *
+ * A THIRD zone, the in-player Info+Up-Next panel (`upnext` package,
+ * player-upnext REQ-U1), sits below the pills row. Continuing DOWN from the
+ * pills flips local [PlayerOverlay]'s `panelExpanded` state — the panel is
+ * CONDITIONALLY composed (design gate correction R1) so a collapsed panel
+ * costs nothing and never covers the screen unrequested. Entry reuses the
+ * SAME deferred-focus (M2) pattern as [pendingEnterControls]: the panel only
+ * exists one frame after the key that expanded it, so focus is requested
+ * from a `LaunchedEffect(panelExpanded)`, never inline. BACK collapses the
+ * panel back to the pills row (overlay stays Revealed) before it ever
+ * collapses the whole overlay (REQ-U8) — see the branch inside the overlay's
+ * own [BackHandler] below. The panel is the tracked controls [Column]'s
+ * TERMINAL child, so `controlsFocused` stays true while it owns focus and
+ * L/R never seeks while browsing (gate R3).
  */
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -149,6 +170,10 @@ fun PlayerOverlay(
     onSelectQuality: (VideoQuality) -> Unit = {},
     onSelectAuto: () -> Unit = {},
     isLive: Boolean = false,
+    upNextState: DetailUiState = DetailUiState.Loading,
+    onUpNextClick: (VideoCardUi) -> Unit = {},
+    onUpNextRetry: () -> Unit = {},
+    onPanelOpened: () -> Unit = {},
 ) {
     var overlayState by remember { mutableStateOf<OverlayState>(OverlayState.Hidden) }
     var controlsFocused by remember { mutableStateOf(false) }
@@ -156,10 +181,20 @@ fun PlayerOverlay(
     var pendingEnterControls by remember { mutableStateOf(false) }
     var longPressActive by remember { mutableStateOf(false) }
     var menu by remember { mutableStateOf<PlayerMenu>(PlayerMenu.Closed) }
+    var panelExpanded by remember { mutableStateOf(false) }
     val neutralFocus = remember { FocusRequester() }
     val transportFocus = remember { FocusRequester() }
     val pillsFocus = remember { FocusRequester() }
     val settingsFocus = remember { FocusRequester() }
+    val upNextFocus = remember { FocusRequester() }
+    // Distinct from [upNextFocus] (gate R3, WU-1 note): the panel container
+    // itself carries `upNextFocus`, while this one binds ONLY the
+    // NotAvailable/Offline/Error inline message/Retry anchor inside
+    // `InfoUpNextPanel`. Reusing the SAME instance for both would attach it
+    // to two different focus nodes whenever an error state renders — this
+    // keeps the two roles unambiguous rather than relying on an on-device
+    // check to catch it.
+    val upNextContentFocus = remember { FocusRequester() }
     val ajustesFocus = remember { FocusRequester() }
     val menuFocus = remember { FocusRequester() }
     // Gate S3: forward-safe restore hook, currently a no-op passthrough —
@@ -191,6 +226,21 @@ fun PlayerOverlay(
         }
     }
 
+    // Gate R2 (player-upnext design gate correction): the Info+Up-Next panel
+    // is CONDITIONALLY composed (only when [panelExpanded]), so a direct
+    // inline `requestFocus()` on the DOWN key that flips it would target a
+    // container that isn't attached yet and silently no-op — same M2
+    // deferred-focus pattern as [pendingEnterControls] above, one frame after
+    // the panel actually composes. [onPanelOpened] triggers the lazy
+    // `UpNextViewModel.ensureLoaded()` (REQ-U3) the FIRST time the panel
+    // opens for the current video; a later re-open reuses the cached state.
+    LaunchedEffect(panelExpanded) {
+        if (panelExpanded) {
+            onPanelOpened()
+            runCatching { upNextFocus.requestFocus() }
+        }
+    }
+
     // MAJOR-5 (design gate #4431) extended to a 3-level menu (REQ-S5): move
     // focus into the ACTIVE panel's CONTAINER only after it actually
     // composes — same M2 deferred-focus pattern as [transportFocus] above,
@@ -212,9 +262,13 @@ fun PlayerOverlay(
     // Also keyed/guarded on [menu] (minor fix, #4431; widened to the 3-level
     // menu for REQ-S5): collapsing the controls behind an open Ajustes or
     // Calidad panel would strand its focus, so auto-hide is fully
-    // suppressed while ANY settings panel is open.
-    LaunchedEffect(lastActivityMs, menu) {
-        if (menu != PlayerMenu.Closed) return@LaunchedEffect
+    // suppressed while ANY settings panel is open. Widened again (REQ-U6)
+    // for [panelExpanded]: browsing the Info+Up-Next panel is also NOT
+    // inactivity — leaving it back to the pills row flips [panelExpanded]
+    // false, which re-triggers this effect and re-arms the 4s window from
+    // that moment, same mechanism [menu] already relies on.
+    LaunchedEffect(lastActivityMs, menu, panelExpanded) {
+        if (menu != PlayerMenu.Closed || panelExpanded) return@LaunchedEffect
         val revealed = overlayState as? OverlayState.Revealed ?: return@LaunchedEffect
         delay(OverlayReducer.AUTO_HIDE_TIMEOUT_MS)
         val next = OverlayReducer.onInactivityTimeout(revealed, nowMs = revealed.sinceMs + OverlayReducer.AUTO_HIDE_TIMEOUT_MS)
@@ -224,11 +278,23 @@ fun PlayerOverlay(
         }
     }
 
-    // BACK first collapses the overlay back to Hidden; only when it is already
-    // Hidden does BACK fall through to whatever the caller wires (pop to Home).
+    // BACK unwinds exactly one level per press (REQ-U8). While the
+    // Info+Up-Next panel owns focus, BACK collapses ONLY the panel back to
+    // the pills row — the overlay stays Revealed. Only once the panel is
+    // already closed does BACK collapse the WHOLE overlay to Hidden; from
+    // there BACK falls through to whatever the caller wires (pop to Home).
+    // No new BackHandler: the menu's own `BackHandler(enabled = menu !=
+    // Closed)` below is composed LAST, so LIFO still makes it win over this
+    // one whenever Ajustes/Calidad is open (REQ-U8 branch 1, unchanged) —
+    // the panel and the settings menu are never reachable/focused at once.
     BackHandler(enabled = visible) {
-        overlayState = OverlayState.Hidden
-        runCatching { neutralFocus.requestFocus() }
+        if (panelExpanded) {
+            panelExpanded = false
+            runCatching { pillsFocus.requestFocus() }
+        } else {
+            overlayState = OverlayState.Hidden
+            runCatching { neutralFocus.requestFocus() }
+        }
     }
 
     Box(
@@ -361,8 +427,39 @@ fun PlayerOverlay(
                         onDislike = { registerActivity(); onDislike() },
                         onCaptions = { registerActivity(); onCaptions() },
                         onSettings = { registerActivity(); menu = PlayerMenuReducer.open(menu) },
+                        onEnterPanel = { registerActivity(); panelExpanded = true },
                     )
                     QualityBadge(label = activeQuality?.label ?: "Auto")
+                }
+
+                // REQ-U1/gate R1/R3: TERMINAL child of the tracked controls
+                // Column — CONDITIONALLY composed so a collapsed panel costs
+                // nothing and never covers the screen unrequested (design
+                // gate correction). Living inside this Column (rather than a
+                // separate BottomEnd surface like Ajustes/Calidad) keeps
+                // `controlsFocused` true while the panel owns focus, so L/R
+                // keeps falling through to Compose's normal focus search
+                // (horizontal rail nav) instead of re-arming reveal-then-seek.
+                if (panelExpanded) {
+                    InfoUpNextPanel(
+                        state = upNextState,
+                        onRelatedClick = onUpNextClick,
+                        onRetry = onUpNextRetry,
+                        contentFocusRequester = upNextContentFocus,
+                        modifier = Modifier
+                            .heightIn(max = (LocalConfiguration.current.screenHeightDp * 0.5).dp)
+                            .focusRequester(upNextFocus)
+                            .focusProperties {
+                                up = pillsFocus
+                                // Terminal boundary (REQ-U1): DOWN is guarded
+                                // here too, same shape as PillsRow's own exit
+                                // below — no further nav, no trap.
+                                @Suppress("DEPRECATION")
+                                exit = { direction -> if (direction == FocusDirection.Down) FocusRequester.Cancel else FocusRequester.Default }
+                            }
+                            .focusGroup()
+                            .verticalScroll(rememberScrollState()),
+                    )
                 }
             }
         }
@@ -553,6 +650,7 @@ private fun PillsRow(
     onDislike: () -> Unit,
     onCaptions: () -> Unit,
     onSettings: () -> Unit,
+    onEnterPanel: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -560,8 +658,22 @@ private fun PillsRow(
             .focusRequester(focusRequester)
             .focusProperties {
                 up = upFocus
+                // REQ-U1/gate R1: DOWN no longer traps focus here — it fires
+                // [onEnterPanel] (flips `panelExpanded` at the call site) and
+                // CANCELS for this frame only, since the panel isn't
+                // composed yet. The caller's deferred
+                // `LaunchedEffect(panelExpanded)` moves focus into it one
+                // frame later (gate R2), the same M2 pattern already used to
+                // enter the transport row.
                 @Suppress("DEPRECATION")
-                exit = { direction -> if (direction == FocusDirection.Down) FocusRequester.Cancel else FocusRequester.Default }
+                exit = { direction ->
+                    if (direction == FocusDirection.Down) {
+                        onEnterPanel()
+                        FocusRequester.Cancel
+                    } else {
+                        FocusRequester.Default
+                    }
+                }
             }
             .focusGroup(),
         horizontalArrangement = Arrangement.spacedBy(12.dp),

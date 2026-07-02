@@ -75,6 +75,14 @@ fun AppNavHost() {
                 state = state,
                 onBack = { navController.popBackStack() },
                 onRetry = viewModel::resolve,
+                // player-upnext REQ-U4: selecting an up-next item pushes a
+                // FRESH `player/{id}` entry (same card->player pipeline as
+                // Home/Search), replacing the active video; BACK returns to
+                // THIS entry and resumes its saved position (REQ-12/13,
+                // entry-scoped PlaybackViewModel — unchanged).
+                onUpNextClick = { card ->
+                    navController.navigate("player/${card.id}?title=${Uri.encode(card.title)}")
+                },
             )
         }
     }
