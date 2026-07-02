@@ -167,7 +167,7 @@ El motor de extracción es el subsistema más frágil; necesita **diagnóstico**
 
 | ID | Requerimiento | Objetivo | Verificación | Fase |
 |---|---|---|---|---|
-| **RNF-DIST-01** | Distribución por sideload | El artefacto se instala por **sideload** directo al **TCL 55C6K**; trivial para el dueño (único usuario) | Instalación manual (adb/sideload) | Todas |
+| **RNF-DIST-01** | Distribución por sideload | El artefacto se instala por **sideload** directo al **TCL 55C6K**; trivial (instalación manual por adb) | Instalación manual (adb/sideload) | Todas |
 | **RNF-DIST-02** | Fuera de tiendas | YouTroc **no** se publica en app stores; no aplican requisitos de policy de tiendas | N/A (decisión de proyecto) | Todas |
 | **RNF-DIST-03** | Target único, sin probing de códec | Un único device objetivo libera de compatibilidad universal: **sin per-device codec probing** | Revisión de config del player | Todas |
 | **RNF-DIST-04** | Footprint de instalación modesto | APK release **modesto frente a los 32 GB de ROM** e índices locales acordes; sin assets innecesarios (objetivo cualitativo, sin tope numérico duro) | Tamaño de APK release | 1 |

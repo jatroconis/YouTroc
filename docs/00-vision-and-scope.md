@@ -21,7 +21,7 @@ El bloqueo por DNS no es una alternativa válida para YouTube: los anuncios se s
 
 ## 2. Objetivo del producto
 
-Construir **YouTroc**: un cliente de YouTube para Android TV, sin anuncios, que **replique la experiencia del cliente oficial de YouTube TV** (experiencia completa), pensado para uso personal vía sideload. No es una app para tiendas.
+Construir **YouTroc**: un cliente de YouTube para Android TV, sin anuncios, que **replique la experiencia del cliente oficial de YouTube TV** (experiencia completa), distribuido open-source por sideload / releases en GitHub. No se publica en tiendas (por ahora).
 
 > Actualización: ver **ADR-10** — el proyecto pasó a multi-target Android TV y open-source (GPL-3.0); el C6K queda como referencia.
 
@@ -31,13 +31,13 @@ Se trata como un proyecto serio y grande, con la expansión futura abierta. El d
 
 ## 3. Usuario objetivo
 
-El **único usuario y dueño es el propio desarrollador**. No hay otros perfiles de usuario, ni multiusuario, ni soporte público.
+Proyecto **open-source de uso público**: el usuario objetivo es cualquiera con un Android TV. La app en **Fase 1** es **anónima** — no maneja cuentas ni perfiles de usuario dentro de la app (login y perfiles llegan en Fase 2). El equipo de **referencia** para el desarrollo es el TCL 55C6K (ver **ADR-10**).
 
 | Atributo | Valor |
 |---|---|
-| Quién | El propio dueño/desarrollador |
-| Dónde | Su televisor **TCL 55C6K (2025)** |
-| Cómo se distribuye | Sideload directo al C6K (trivial para el dueño) |
+| Quién | Cualquiera con un Android TV (equipo de referencia: el mantenedor y su TCL 55C6K) |
+| Dónde | Cualquier Android TV; equipo de referencia **TCL 55C6K (2025)** |
+| Cómo se distribuye | Sideload / releases open-source en GitHub |
 | Cómo se interactúa | Mando a distancia / D-pad de Google TV con convenciones estándar de Android TV (foco, OK selecciona, BACK retrocede, controles propios de play/pausa/seek durante la reproducción; sin atajos personalizados en Fase 1) |
 
 ### Hardware objetivo (único dispositivo conocido)
@@ -135,7 +135,7 @@ YouTroc **explícitamente NO** hace lo siguiente:
 | **No microG** | Irrelevante: solo aplica a apps parcheadas. YouTroc no parchea nada. |
 | **No reimplementa el motor de reproducción** | Media3/ExoPlayer es infraestructura genérica y profundamente trabajada. Solo construimos la UI de controles. |
 | **No reimplementa la decodificación** | La decodificación la hace el hardware del SoC vía MediaCodec; nunca es nuestra. |
-| **No multiusuario / no soporte público** | Un único usuario: el dueño. |
+| **Sin cuentas/perfiles en la app (Fase 1)** | La app es anónima; login y perfiles de usuario llegan en Fase 2. |
 
 ---
 
@@ -167,7 +167,7 @@ Esto prueba la **hipótesis central** del proyecto el primer día: que el client
 - **Cuando** se prepara la reproducción,
 - **Entonces** se combinan vía `MergingMediaSource` en una sola sesión reproducible.
 
-### Métricas de éxito (cualitativas para uso personal)
+### Métricas de éxito (cualitativas)
 
 | Criterio | Definición de éxito |
 |---|---|
