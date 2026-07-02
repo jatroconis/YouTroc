@@ -182,6 +182,12 @@ fun PlayerOverlay(
     var longPressActive by remember { mutableStateOf(false) }
     var menu by remember { mutableStateOf<PlayerMenu>(PlayerMenu.Closed) }
     var panelExpanded by remember { mutableStateOf(false) }
+    // REQ-U6/design D4: tracks whether the panel CONTAINER itself currently
+    // owns focus, distinct from [panelExpanded] (which only flips false on
+    // BACK). UP-from-panel-to-pills leaves [panelExpanded] true but moves
+    // focus away — this is what the auto-hide guard below keys on instead,
+    // so REQ-U6 scenario 2 (focus leaves panel -> auto-hide resumes) holds.
+    var panelFocused by remember { mutableStateOf(false) }
     val neutralFocus = remember { FocusRequester() }
     val transportFocus = remember { FocusRequester() }
     val pillsFocus = remember { FocusRequester() }
@@ -262,18 +268,26 @@ fun PlayerOverlay(
     // Also keyed/guarded on [menu] (minor fix, #4431; widened to the 3-level
     // menu for REQ-S5): collapsing the controls behind an open Ajustes or
     // Calidad panel would strand its focus, so auto-hide is fully
-    // suppressed while ANY settings panel is open. Widened again (REQ-U6)
-    // for [panelExpanded]: browsing the Info+Up-Next panel is also NOT
-    // inactivity — leaving it back to the pills row flips [panelExpanded]
-    // false, which re-triggers this effect and re-arms the 4s window from
-    // that moment, same mechanism [menu] already relies on.
-    LaunchedEffect(lastActivityMs, menu, panelExpanded) {
-        if (menu != PlayerMenu.Closed || panelExpanded) return@LaunchedEffect
+    // suppressed while ANY settings panel is open. Widened again (REQ-U6,
+    // fixed post-verify WARNING-1) for [panelFocused] rather than
+    // [panelExpanded]: browsing the Info+Up-Next panel is also NOT
+    // inactivity, but the panel stays `panelExpanded` until BACK — keying on
+    // expansion would strand the suppression even after UP moves focus back
+    // to the pills row. [panelFocused] tracks the panel container's actual
+    // focus (design D4), so leaving it back to the pills re-triggers this
+    // effect and re-arms the 4s window from that moment, same mechanism
+    // [menu] already relies on.
+    LaunchedEffect(lastActivityMs, menu, panelFocused) {
+        if (menu != PlayerMenu.Closed || panelFocused) return@LaunchedEffect
         val revealed = overlayState as? OverlayState.Revealed ?: return@LaunchedEffect
         delay(OverlayReducer.AUTO_HIDE_TIMEOUT_MS)
         val next = OverlayReducer.onInactivityTimeout(revealed, nowMs = revealed.sinceMs + OverlayReducer.AUTO_HIDE_TIMEOUT_MS)
         if (next is OverlayState.Hidden) {
             overlayState = next
+            // Fresh reveal should start clean — a still-expanded-but-hidden
+            // panel would be a ghost state. [panelFocused] follows to false
+            // on its own next frame once the container loses focus.
+            panelExpanded = false
             runCatching { neutralFocus.requestFocus() }
         }
     }
@@ -429,7 +443,7 @@ fun PlayerOverlay(
                         onSettings = { registerActivity(); menu = PlayerMenuReducer.open(menu) },
                         onEnterPanel = { registerActivity(); panelExpanded = true },
                     )
-                    QualityBadge(label = activeQuality?.label ?: "Auto")
+                    QualityBadge(label = activeQuality?.label ?: "Automática")
                 }
 
                 // REQ-U1/gate R1/R3: TERMINAL child of the tracked controls
@@ -448,6 +462,14 @@ fun PlayerOverlay(
                         contentFocusRequester = upNextContentFocus,
                         modifier = Modifier
                             .heightIn(max = (LocalConfiguration.current.screenHeightDp * 0.5).dp)
+                            // REQ-U6/design D4: observes the panel container's
+                            // OWN focus state (bubbles up from whatever child
+                            // — description Box, retry, related card — holds
+                            // it), independent of [panelExpanded]. Placed
+                            // BEFORE focusRequester/focusProperties/focusGroup
+                            // so it wraps the whole focus group, same as the
+                            // description Box's own onFocusChanged below.
+                            .onFocusChanged { panelFocused = it.hasFocus }
                             .focusRequester(upNextFocus)
                             .focusProperties {
                                 up = pillsFocus
@@ -691,7 +713,7 @@ private fun PillsRow(
     }
 }
 
-/** Small non-focusable "Calidad" indicator next to the pills (REQ-Q2): the active pick, or "Auto". */
+/** Small non-focusable "Calidad" indicator next to the pills (REQ-Q2): the active pick, or "Automática". */
 @Composable
 private fun QualityBadge(label: String, modifier: Modifier = Modifier) {
     Box(

@@ -133,7 +133,6 @@ private fun PanelBody(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
             .padding(horizontal = YouTrocDimens.overscanHorizontal, vertical = YouTrocDimens.overscanVertical),
     ) {
         // Channel name is plain, non-focusable text — RF-VID-04, channel-page
