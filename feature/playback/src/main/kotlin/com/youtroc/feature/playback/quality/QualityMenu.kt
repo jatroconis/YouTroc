@@ -6,9 +6,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.runtime.Composable
@@ -20,6 +23,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.Icon
@@ -75,6 +79,11 @@ fun QualityMenu(
     Column(
         modifier = modifier
             .width(280.dp)
+            // gate S4: relative cap (fraction of screen height) instead of a
+            // fixed dp, so the panel never runs off-top on denser TV
+            // screens — bounds the top, the anchor `bottom` padding at the
+            // call site bounds the bottom against the control band (REQ-S2).
+            .heightIn(max = (LocalConfiguration.current.screenHeightDp * 0.45).dp)
             .background(Color.Black.copy(alpha = 0.9f), RoundedCornerShape(12.dp))
             .padding(16.dp)
             .focusRequester(menuFocusRequester)
@@ -84,7 +93,12 @@ fun QualityMenu(
                 @Suppress("DEPRECATION")
                 exit = { FocusRequester.Cancel }
             }
-            .focusGroup(),
+            .focusGroup()
+            // gate R2/REQ-S2: scroll host is the focusGroup container itself
+            // (LAST modifier) so D-pad UP/DOWN moves focus row-to-row and
+            // Compose's auto `bringIntoView` scrolls the focused row through
+            // the clipped list — same pattern as `DetailContent.kt`.
+            .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Text(text = "Calidad", color = OnDark, style = MaterialTheme.typography.titleMedium)

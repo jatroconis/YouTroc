@@ -72,9 +72,12 @@ import com.youtroc.feature.playback.overlay.DpadAction
 import com.youtroc.feature.playback.overlay.OverlayReducer
 import com.youtroc.feature.playback.overlay.OverlayState
 import com.youtroc.feature.playback.overlay.PlaybackTimeFormatter
+import com.youtroc.feature.playback.overlay.PlayerMenu
+import com.youtroc.feature.playback.overlay.PlayerMenuReducer
 import com.youtroc.feature.playback.overlay.SeekAmount
 import com.youtroc.feature.playback.overlay.decideDpadAction
 import com.youtroc.feature.playback.quality.QualityMenu
+import com.youtroc.feature.playback.settings.SettingsMenu
 import kotlinx.coroutines.delay
 
 /**
@@ -118,13 +121,15 @@ import kotlinx.coroutines.delay
  * delegates to ([decideDpadAction], [OverlayReducer], [SeekAmount],
  * [PlaybackTimeFormatter]) ARE unit-tested.
  *
- * The ⚙ pill (REQ-Q2/REQ-11) opens the "Calidad" menu — [QualityMenu] — as a
- * modal layer this composable owns via local [menuVisible] state, rather
- * than forwarding to an external callback. While the menu is open: the
- * outer key handler stops intercepting D-pad input (menu owns it via normal
- * Compose focus search), the 4s auto-hide is suppressed, and a nested
- * [BackHandler] — composed AFTER the overlay's own, so LIFO makes it win —
- * closes only the menu (REQ-Q7), restoring focus to the settings pill.
+ * The ⚙ pill (REQ-S1/REQ-11) opens a two-tier "Ajustes" -> "Calidad" menu —
+ * [SettingsMenu] then [QualityMenu] — as modal layers this composable owns
+ * via local [menu] state (a pure [PlayerMenu] driven by
+ * [PlayerMenuReducer]), rather than forwarding to an external callback.
+ * While any panel is open: the outer key handler stops intercepting D-pad
+ * input (the panel owns it via normal Compose focus search), the 4s
+ * auto-hide is suppressed, and a nested [BackHandler] — composed AFTER the
+ * overlay's own, so LIFO makes it win — unwinds exactly one level per press
+ * (REQ-S4), restoring focus to the row that opened the closed panel.
  */
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -150,12 +155,18 @@ fun PlayerOverlay(
     var lastActivityMs by remember { mutableLongStateOf(0L) }
     var pendingEnterControls by remember { mutableStateOf(false) }
     var longPressActive by remember { mutableStateOf(false) }
-    var menuVisible by remember { mutableStateOf(false) }
+    var menu by remember { mutableStateOf<PlayerMenu>(PlayerMenu.Closed) }
     val neutralFocus = remember { FocusRequester() }
     val transportFocus = remember { FocusRequester() }
     val pillsFocus = remember { FocusRequester() }
     val settingsFocus = remember { FocusRequester() }
+    val ajustesFocus = remember { FocusRequester() }
     val menuFocus = remember { FocusRequester() }
+    // Gate S3: forward-safe restore hook, currently a no-op passthrough —
+    // FASE-1's Ajustes has exactly one row, so requesting the Ajustes
+    // container (see LaunchedEffect(menu) below) already lands on the sole
+    // Calidad row; wired now for when Ajustes gains more rows.
+    val calidadRowFocus = remember { FocusRequester() }
     val currentOnSeek by rememberUpdatedState(onSeek)
     val currentOnPlayPause by rememberUpdatedState(onPlayPause)
 
@@ -180,16 +191,17 @@ fun PlayerOverlay(
         }
     }
 
-    // MAJOR-5 (design gate #4431): move focus into the "Calidad" menu
-    // CONTAINER only after it actually composes — same M2 deferred-focus
-    // pattern as [transportFocus] above, not requested inline during the
-    // click that opened it. Closing the menu (BACK, or applying a
-    // selection) restores focus to the settings pill that opened it.
-    LaunchedEffect(menuVisible) {
-        if (menuVisible) {
-            runCatching { menuFocus.requestFocus() }
-        } else {
-            runCatching { settingsFocus.requestFocus() }
+    // MAJOR-5 (design gate #4431) extended to a 3-level menu (REQ-S5): move
+    // focus into the ACTIVE panel's CONTAINER only after it actually
+    // composes — same M2 deferred-focus pattern as [transportFocus] above,
+    // not requested inline during the click that opened it. Closing back to
+    // Closed (BACK, or applying a selection) restores focus to the settings
+    // pill that opened the whole menu.
+    LaunchedEffect(menu) {
+        when (menu) {
+            PlayerMenu.Ajustes -> runCatching { ajustesFocus.requestFocus() }
+            PlayerMenu.Calidad -> runCatching { menuFocus.requestFocus() }
+            PlayerMenu.Closed -> runCatching { settingsFocus.requestFocus() }
         }
     }
 
@@ -197,11 +209,12 @@ fun PlayerOverlay(
     // just the key event that first revealed the overlay. Keyed on
     // [lastActivityMs] rather than [overlayState] so in-row focus movement
     // and button clicks (which call [registerActivity]) restart the timer.
-    // Also keyed/guarded on [menuVisible] (minor fix, #4431): collapsing the
-    // controls behind an open "Calidad" menu would strand its focus, so
-    // auto-hide is fully suppressed while the menu is open.
-    LaunchedEffect(lastActivityMs, menuVisible) {
-        if (menuVisible) return@LaunchedEffect
+    // Also keyed/guarded on [menu] (minor fix, #4431; widened to the 3-level
+    // menu for REQ-S5): collapsing the controls behind an open Ajustes or
+    // Calidad panel would strand its focus, so auto-hide is fully
+    // suppressed while ANY settings panel is open.
+    LaunchedEffect(lastActivityMs, menu) {
+        if (menu != PlayerMenu.Closed) return@LaunchedEffect
         val revealed = overlayState as? OverlayState.Revealed ?: return@LaunchedEffect
         delay(OverlayReducer.AUTO_HIDE_TIMEOUT_MS)
         val next = OverlayReducer.onInactivityTimeout(revealed, nowMs = revealed.sinceMs + OverlayReducer.AUTO_HIDE_TIMEOUT_MS)
@@ -222,11 +235,12 @@ fun PlayerOverlay(
         modifier = modifier
             .fillMaxSize()
             .onPreviewKeyEvent { keyEvent ->
-                // minor fix (#4431): while the "Calidad" menu is open it owns
-                // ALL D-pad input via normal Compose focus search — the
+                // minor fix (#4431; widened to the 3-level menu for REQ-S5):
+                // while any settings panel (Ajustes or Calidad) is open it
+                // owns ALL D-pad input via normal Compose focus search — the
                 // reveal-then-seek gesture and pills/transport navigation
-                // below must not intercept keys meant for the menu's rows.
-                if (menuVisible) return@onPreviewKeyEvent false
+                // below must not intercept keys meant for the panel's rows.
+                if (menu != PlayerMenu.Closed) return@onPreviewKeyEvent false
 
                 val repeatCount = keyEvent.nativeKeyEvent.repeatCount
                 // MAJOR M3: Android's KeyUp.repeatCount is ALWAYS 0, so the
@@ -346,31 +360,50 @@ fun PlayerOverlay(
                         onLike = { registerActivity(); onLike() },
                         onDislike = { registerActivity(); onDislike() },
                         onCaptions = { registerActivity(); onCaptions() },
-                        onSettings = { registerActivity(); menuVisible = true },
+                        onSettings = { registerActivity(); menu = PlayerMenuReducer.open(menu) },
                     )
                     QualityBadge(label = activeQuality?.label ?: "Auto")
                 }
             }
         }
 
-        if (menuVisible) {
+        if (menu is PlayerMenu.Ajustes) {
+            // Gate R1: pins the Ajustes anchor to the SAME clear-of-control-
+            // band value as Calidad below, so the FIRST panel ⚙ opens is
+            // provably clear of the scrubber/transport/pills band.
+            SettingsMenu(
+                activeQualityLabel = activeQuality?.label,
+                ajustesFocusRequester = ajustesFocus,
+                calidadRowFocusRequester = calidadRowFocus,
+                onOpenQuality = { menu = PlayerMenuReducer.openQuality(menu) },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 40.dp, bottom = 200.dp),
+            )
+        }
+
+        if (menu is PlayerMenu.Calidad) {
             QualityMenu(
                 availableQualities = availableQualities,
                 activeQuality = activeQuality,
                 menuFocusRequester = menuFocus,
-                onSelectQuality = { quality -> onSelectQuality(quality); menuVisible = false },
-                onSelectAuto = { onSelectAuto(); menuVisible = false },
+                // REQ-S3: a resolution/Automática pick closes the ENTIRE
+                // menu back to the player, not just Calidad.
+                onSelectQuality = { quality -> onSelectQuality(quality); menu = PlayerMenuReducer.selectResolution(menu) },
+                onSelectAuto = { onSelectAuto(); menu = PlayerMenuReducer.selectResolution(menu) },
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(end = 40.dp, bottom = 120.dp),
+                    .padding(end = 40.dp, bottom = 200.dp),
             )
         }
 
-        // minor fix (#4431): composed LAST so LIFO makes THIS handler win
-        // over the overlay's own `BackHandler` above while the menu is open —
-        // BACK closes the "Calidad" menu only, never pops the player.
-        BackHandler(enabled = menuVisible) {
-            menuVisible = false
+        // minor fix (#4431; widened to the 3-level menu for REQ-S4):
+        // composed LAST so LIFO makes THIS handler win over the overlay's
+        // own `BackHandler` above while any settings panel is open — BACK
+        // unwinds exactly one level per press via the pure reducer, never
+        // pops the player while a panel is open.
+        BackHandler(enabled = menu != PlayerMenu.Closed) {
+            menu = PlayerMenuReducer.back(menu)
         }
     }
 }
