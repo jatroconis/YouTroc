@@ -52,4 +52,39 @@ class PlaybackManifestTest {
 
         assertNull(manifest.secondaryAudioUrl)
     }
+
+    @Test
+    fun `isLive is true for LIVE_HLS and LIVE_DASH`() {
+        assertEquals(true, PlaybackManifest.Kind.LIVE_HLS.isLive)
+        assertEquals(true, PlaybackManifest.Kind.LIVE_DASH.isLive)
+    }
+
+    @Test
+    fun `isLive is false for DASH, PROGRESSIVE and MERGED`() {
+        assertEquals(false, PlaybackManifest.Kind.DASH.isLive)
+        assertEquals(false, PlaybackManifest.Kind.PROGRESSIVE.isLive)
+        assertEquals(false, PlaybackManifest.Kind.MERGED.isLive)
+    }
+
+    @Test
+    fun `accepts LIVE_HLS with a URL payload and no secondary audio url`() {
+        val manifest = PlaybackManifest(
+            kind = PlaybackManifest.Kind.LIVE_HLS,
+            payload = "https://cdn/live.m3u8",
+            adaptive = true,
+        )
+
+        assertNull(manifest.secondaryAudioUrl)
+    }
+
+    @Test
+    fun `accepts LIVE_DASH with a URL payload and no secondary audio url`() {
+        val manifest = PlaybackManifest(
+            kind = PlaybackManifest.Kind.LIVE_DASH,
+            payload = "https://cdn/live.mpd",
+            adaptive = true,
+        )
+
+        assertNull(manifest.secondaryAudioUrl)
+    }
 }

@@ -17,6 +17,8 @@ data class PlayableStreams(
     val manifest: PlaybackManifest? = null,
 ) {
     init {
-        require(streams.isNotEmpty()) { "PlayableStreams must contain at least one stream." }
+        require(streams.isNotEmpty() || manifest?.kind?.isLive == true) {
+            "PlayableStreams needs at least one stream, unless it carries a live manifest."
+        }
     }
 }

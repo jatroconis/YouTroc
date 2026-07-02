@@ -1,5 +1,6 @@
 package com.youtroc.data.extraction
 
+import com.youtroc.core.domain.playback.LivePlaybackSelectionPolicy
 import com.youtroc.core.domain.playback.ManifestInputs
 import com.youtroc.core.domain.playback.PlaybackManifest
 import com.youtroc.core.domain.playback.PlaybackSelectionPolicy
@@ -16,6 +17,7 @@ import org.schabi.newpipe.extractor.exceptions.ContentNotAvailableException
 import org.schabi.newpipe.extractor.exceptions.ExtractionException
 import org.schabi.newpipe.extractor.stream.AudioStream
 import org.schabi.newpipe.extractor.stream.StreamInfo
+import org.schabi.newpipe.extractor.stream.StreamType
 import org.schabi.newpipe.extractor.stream.VideoStream
 import java.io.IOException
 import kotlin.coroutines.cancellation.CancellationException
@@ -41,20 +43,36 @@ class NewPipeStreamProvider(
             bootstrap()
             try {
                 val info = StreamInfo.getInfo(ServiceList.YouTube, watchUrl(videoId))
-                val streams = collectStreams(info)
-                if (streams.isEmpty()) {
-                    // Empty format lists are the classic SABR / PoToken-gate degradation,
-                    // not a healthy extraction: treat as "cannot play anonymously".
-                    StreamResult.NotAvailable
-                } else {
-                    StreamResult.Success(PlayableStreams(streams, manifest(info, streams)))
-                }
+                if (info.streamType.isLive()) liveResult(info) else vodResult(info)
             } catch (e: CancellationException) {
                 throw e // never swallow cooperative cancellation
             } catch (e: Exception) {
                 e.toStreamResult()
             }
         }
+
+    private fun vodResult(info: StreamInfo): StreamResult {
+        val streams = collectStreams(info)
+        return if (streams.isEmpty()) {
+            // Empty format lists are the classic SABR / PoToken-gate degradation,
+            // not a healthy extraction: treat as "cannot play anonymously".
+            StreamResult.NotAvailable
+        } else {
+            StreamResult.Success(PlayableStreams(streams, manifest(info, streams)))
+        }
+    }
+
+    /**
+     * HLS-first, DASH-URL fallback. Un-playable live (DRM/premium/geo) degrades
+     * deterministically to [StreamResult.NotAvailable] — no exception thrown.
+     */
+    private fun liveResult(info: StreamInfo): StreamResult {
+        val manifest = LivePlaybackSelectionPolicy.select(
+            hlsUrl = info.hlsUrl?.takeIf { it.isNotBlank() },
+            dashMpdUrl = info.dashMpdUrl?.takeIf { it.isNotBlank() },
+        ) ?: return StreamResult.NotAvailable
+        return StreamResult.Success(PlayableStreams(emptyList(), manifest))
+    }
 
     private fun collectStreams(info: StreamInfo): List<Stream> =
         buildList {
@@ -114,6 +132,16 @@ class NewPipeStreamProvider(
 
     private fun watchUrl(videoId: VideoId): String =
         "https://www.youtube.com/watch?v=${videoId.value}"
+}
+
+/**
+ * True for streams currently being broadcast live. `POST_LIVE_STREAM`/`POST_LIVE_AUDIO_STREAM`
+ * (an ended broadcast's DVR recording) is deliberately NOT live — it keeps flowing through
+ * the existing VOD `collectStreams` path (its itags have real DASH/progressive formats).
+ */
+internal fun StreamType.isLive(): Boolean = when (this) {
+    StreamType.LIVE_STREAM, StreamType.AUDIO_LIVE_STREAM -> true
+    else -> false
 }
 
 /**

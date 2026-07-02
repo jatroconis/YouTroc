@@ -33,5 +33,15 @@ data class PlaybackManifest(
 
         /** Separate video-only + audio-only URLs merged at playback time; last resort. */
         MERGED,
+
+        /** Live HLS; [payload] is a plain playback URL, not inline manifest content. */
+        LIVE_HLS,
+
+        /** Live DASH; [payload] is a plain manifest URL (fetched at playback time), contrast [DASH]'s inline XML. */
+        LIVE_DASH,
+        ;
+
+        /** True for the live kinds, where [payload] is always a URL and streams may be empty. */
+        val isLive: Boolean get() = this == LIVE_HLS || this == LIVE_DASH
     }
 }

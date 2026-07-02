@@ -10,6 +10,8 @@ data class PlaybackState(
     val availableQualities: List<VideoQuality> = emptyList(),
     /** The pinned quality, or `null` when Automatic (ABR) is active. */
     val activeQuality: VideoQuality? = null,
+    /** True when the active manifest is a live delivery (LIVE_HLS/LIVE_DASH). */
+    val isLive: Boolean = false,
 ) {
     /** Lifecycle of a media source loaded into a [MediaPlayer]. */
     enum class Phase {

@@ -35,4 +35,32 @@ class NewPipeStreamProviderLiveTest {
             "every resolved stream should be an http(s) URL",
         )
     }
+
+    /**
+     * Live is a SEPARATE assertion shape from VOD (S3): `streams` is expected EMPTY
+     * (the manifest URL, not itag streams, carries playback) and the manifest must
+     * be a live kind whose payload is a plain playback URL.
+     *
+     * The video id is a known long-running public 24/7 live channel (ephemeral by
+     * nature — if it goes offline, override via a differently-broadcasting id).
+     */
+    @Test
+    fun `extracts a live manifest for a stable public live broadcast`() = runTest {
+        val provider = NewPipeStreamProvider()
+
+        // NASA's public 24/7 live stream — long-running, anonymous, ad-free.
+        val result = provider.playableStreams(VideoId("21X5lGlDOfg"))
+
+        val success = assertIs<StreamResult.Success>(result)
+        assertTrue(
+            success.streams.streams.isEmpty(),
+            "live delivery carries no itag streams — only a manifest URL",
+        )
+        val manifest = success.streams.manifest
+        assertTrue(manifest != null && manifest.kind.isLive, "expected a live manifest kind")
+        assertTrue(
+            manifest.payload.startsWith("http"),
+            "live manifest payload must be a plain playback URL",
+        )
+    }
 }
