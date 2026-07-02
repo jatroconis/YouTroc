@@ -105,7 +105,7 @@ adb connect <ip-del-tv>:5555
 adb -s <ip-del-tv>:5555 install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Los APK publicados van en la pestaña **[Releases](../../releases)** (pre-releases marcados `alpha`). `local.properties` (ruta del SDK) es local y no se versiona.
+Los APK publicados van en la pestaña **[Releases](../../releases)** (con su SHA-256 y escaneo de VirusTotal — ver [Seguridad](#seguridad-y-verificación)). `local.properties` (ruta del SDK) es local y no se versiona.
 
 ## Tests
 
@@ -116,6 +116,17 @@ Los APK publicados van en la pestaña **[Releases](../../releases)** (pre-releas
 El dominio se testea con **TDD** (fakes detrás de los puertos). La UI Compose (foco, D-pad, scroll) se valida en dispositivo real, no con tests unitarios. Hay una prueba de integración *opt-in* de live tras `YOUTROC_LIVE=1` (golpea la red real; no corre por defecto).
 
 ---
+
+## Seguridad y verificación
+
+Cada [release](../../releases) incluye el **SHA-256** del APK y un **escaneo de VirusTotal**, para que verifiques que descargaste exactamente ese archivo y que está limpio. La versión `v0.1.0-alpha` dio **0/74 — limpio** ([reporte](https://www.virustotal.com/gui/file/daa5a3f93578c4c0bddc78318c5a94bc345aa1eab548004717d51e9f79f39bad)):
+
+```bash
+sha256sum YouTroc-v0.1.0-alpha.apk
+# daa5a3f93578c4c0bddc78318c5a94bc345aa1eab548004717d51e9f79f39bad
+```
+
+> Los clientes no oficiales de YouTube / basados en NewPipe a veces reciben falsos positivos heurísticos en algún antivirus; por eso publicamos el reporte completo de VirusTotal y el checksum.
 
 ## Contribuir
 
