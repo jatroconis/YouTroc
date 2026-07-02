@@ -25,7 +25,7 @@ Construir **YouTroc**: un cliente de YouTube para Android TV, sin anuncios, que 
 
 > Actualización: ver **ADR-10** — el proyecto pasó a multi-target Android TV y open-source (GPL-3.0); el C6K queda como referencia.
 
-Se trata como un proyecto serio y grande, con la expansión futura abierta. El objetivo de aprendizaje principal y el diferenciador de producto es construir un **extractor InnerTube propio** desde cero.
+Se trata como un proyecto serio y grande, con la expansión futura abierta. El diferenciador central del proyecto es construir un **extractor InnerTube propio** desde cero.
 
 ---
 
@@ -126,7 +126,7 @@ YouTroc **explícitamente NO** hace lo siguiente:
 
 | No-Goal | Razón |
 |---|---|
-| **No es para app stores** | Uso personal vía sideload al C6K. No hay publicación en Google Play ni en ninguna tienda. |
+| **No es para app stores** | Distribución por sideload y releases en GitHub (ver **ADR-10**). No hay publicación en Google Play ni en ninguna tienda. |
 | **No patching** | No parchea la app oficial de YouTube (ni móvil ni TV). Es un cliente desde cero. |
 | **No "mejor que YouTube" a nivel infraestructura** | Somos un CLIENTE; dependemos de la API InnerTube y del CDN `googlevideo`. No competimos con la infraestructura de YouTube. |
 | **No soporta hardware por debajo del C6K** | El TCL 55C6K es el suelo. No hay compatibilidad universal estilo SmartTube. |

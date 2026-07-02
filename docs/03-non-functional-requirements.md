@@ -118,7 +118,7 @@ La mantenibilidad se sostiene sobre **fronteras impuestas por el compilador** (m
 
 ## 5. RNF de Seguridad y Privacidad (`RNF-SEG`)
 
-YouTroc es de **uso personal**, sin tiendas, sin monetización. La privacidad es por diseño: **sin telemetría, sin ads, sin tracking**.
+YouTroc se distribuye como **open-source** por sideload y releases en GitHub (todavía sin publicación en tiendas), sin monetización. La privacidad es por diseño: **sin telemetría, sin ads, sin tracking**.
 
 | ID | Requerimiento | Objetivo | Verificación | Fase |
 |---|---|---|---|---|

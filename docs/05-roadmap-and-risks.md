@@ -1,6 +1,6 @@
 # Roadmap y Registro de Riesgos — YouTroc
 
-> Plan de entrega incremental (de la vertical slice sin UI a la experiencia completa con cuenta) y el registro de riesgos del proyecto, con su mitigación, para un cliente de YouTube sin anuncios en Android TV de uso personal (sideload).
+> Plan de entrega incremental (de la vertical slice sin UI a la experiencia completa con cuenta) y el registro de riesgos del proyecto, con su mitigación, para un cliente de YouTube sin anuncios en Android TV, distribuido open-source por sideload y releases en GitHub (todavía sin publicación en tiendas).
 
 ---
 
@@ -11,7 +11,7 @@ Este documento cubre dos cosas:
 1. **Roadmap** — la secuencia de hitos, desde el Hito 0 (vertical slice sin UI) hasta la Fase 2 (cuenta), respetando la regla de dependencias hacia el dominio y la separación por módulos.
 2. **Registro de Riesgos** — la tabla de riesgos con probabilidad, impacto y mitigación, encabezada por el riesgo #1: la rotura de la extracción.
 
-El proyecto es un cliente de YouTube **sin anuncios por construcción** para el **TCL 55C6K** (MediaTek Pentonic 700, 3GB RAM, 32GB ROM, Google TV moderno). Ese dispositivo es el **piso**: no hay objetivos por debajo de él. La distribución es **sideload** al equipo del propio dueño; no hay tiendas de aplicaciones.
+El proyecto es un cliente de YouTube **sin anuncios por construcción** para el **TCL 55C6K** (MediaTek Pentonic 700, 3GB RAM, 32GB ROM, Google TV moderno). Ese dispositivo es el **piso**: no hay objetivos por debajo de él. La distribución es **open-source por sideload y releases en GitHub** (todavía sin publicación en tiendas).
 
 > Convención de este documento: los defaults de producto que originalmente NO estaban cubiertos por las DECISIONS de origen fueron **confirmados el 2026-06-30** y aquí aparecen como decisiones cerradas (ya no como asunciones). Las resoluciones puntuales se listan en la sección "Decisiones confirmadas" al final. No se inventan decisiones de negocio.
 
@@ -213,14 +213,14 @@ Escala usada — **Probabilidad**: Alta / Media / Baja. **Impacto**: Crítico / 
 | **3** | **Juego del gato y el ratón server-side de YouTube** — YouTube cambia su API/protección del lado servidor de forma continua | **Alta** | **Crítico** | Tratar la extracción como dependencia **viva**, no estática; `StreamProvider` swappable para reaccionar rápido; baseline de NewPipeExtractor que absorbe cambios mientras se actualiza el motor propio; superada la dependencia: somos el mejor **cliente**, no un mejor YouTube |
 | **4** | **ToS y baneo de cuenta (Fase 2)** — uso no oficial de la API interna estando logueado puede derivar en baneo | **Media** | **Alto** | El riesgo aplica **solo** con login; Fase 1 es 100% anónima (sin exposición de cuenta); recomendación explícita de **cuenta quemable (burner)** para Fase 2; mantener Fase 1 plenamente funcional sin cuenta |
 | **5** | **Rendimiento de Compose si se descuida la disciplina** — jank, GC, presupuesto de 16ms si no se cuida | **Media** | **Alto** | R8 full mode + Baseline Profile **app-specific** day-one; medir en el **C6K real**; entender los bottlenecks reales (selección de codec, frame budget 16ms, presupuesto de memoria) que son **agnósticos del lenguaje**; en 3GB el delta de RAM/GC de Compose es negligible |
-| **6** | **Distribución solo-sideload** — sin tienda, sin canal de actualización automático | **Baja** | **Bajo** | Decisión de diseño consciente: uso personal, no para tiendas; el dueño es el único usuario y el sideload al C6K es **trivial** para él; sin necesidad de pipeline de distribución pública |
+| **6** | **Distribución solo-sideload** — sin tienda, sin canal de actualización automático | **Baja** | **Bajo** | Decisión de diseño consciente: distribución open-source por sideload y releases en GitHub (todavía sin publicación en tiendas); el sideload al C6K es **trivial** para el dueño; sin necesidad de pipeline de distribución pública |
 | **7** | **ROM / almacenamiento** — 32GB ROM en el C6K, presupuesto finito para app + datos locales | **Baja** | **Medio** | Coil con downsampling para imágenes; persistencia local acotada (Room/DataStore) solo para ajustes, favoritos y continuar viendo (sin historial local); sin assets pesados embebidos; `DefaultLoadControl` con tope de memoria evita buffers desbordados |
 
 ## 2.2 Notas sobre el riesgo #1 (extracción)
 
 El riesgo #1 es la **razón de ser** de la secuencia del roadmap:
 
-- Es el **diferenciador del producto** y el **objetivo principal de aprendizaje**: por eso se construye desde cero detrás del `StreamProvider` port.
+- Es el **diferenciador central del producto**: por eso se construye desde cero detrás del `StreamProvider` port.
 - La **mitigación estructural** ya está en la arquitectura: NewPipeExtractor entra como scaffold detrás del **mismo** port, de modo que un fallo del motor propio degrada a la referencia sin reescribir el resto de la app.
 - Construimos desde cero **donde diferenciamos** (el extractor) y usamos librería **donde es infraestructura genérica** (el player, Media3). El riesgo se concentra deliberadamente en un solo seam intercambiable.
 

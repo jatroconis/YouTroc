@@ -20,7 +20,7 @@
 
 ## Alcance y convenciones
 
-YouTroc es un cliente de YouTube **sin ads por construcción**: nunca ejecuta el player oficial de Google, habla directamente con la API interna **InnerTube** vía el puerto `StreamProvider` e **ignora** los campos `adPlacements` / `playerAds` que devuelve InnerTube. No hay bloqueo por DNS ni MITM. Es de uso personal (sideload al TCL 55C6K), no para tiendas.
+YouTroc es un cliente de YouTube **sin ads por construcción**: nunca ejecuta el player oficial de Google, habla directamente con la API interna **InnerTube** vía el puerto `StreamProvider` e **ignora** los campos `adPlacements` / `playerAds` que devuelve InnerTube. No hay bloqueo por DNS ni MITM. Se distribuye como open-source por sideload / releases en GitHub (todavía sin publicación en tiendas).
 
 Convenciones de este documento:
 

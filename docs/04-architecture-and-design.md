@@ -156,7 +156,7 @@ Qué librería vive en qué módulo. El stack es 100% Kotlin (sin Rust, sin cód
 | Librería / tecnología | Módulo donde vive | Rol |
 |---|---|---|
 | OkHttp + kotlinx.serialization | `:data:extraction` (y `:data:session` para OAuth) | HTTP + parseo JSON de InnerTube |
-| Motor InnerTube propio | `:data:extraction` | Extractor desde cero (diferenciador + objetivo de aprendizaje) |
+| Motor InnerTube propio | `:data:extraction` | Extractor desde cero (diferenciador central) |
 | NewPipeExtractor (andamio) | `:data:extraction` | Baseline/andamio detrás del MISMO puerto, red de seguridad |
 | Media3 / ExoPlayer | `:data:player` | Engine de reproducción (NO se reimplementa) |
 | Flujo OAuth 2.0 device-code | `:data:session` | Login Fase 2 (sin microG) |
@@ -236,7 +236,7 @@ Es el corazón del proyecto y su **riesgo #1**. Aloja dos implementaciones del *
    ┌──────────────────────────────┐         ┌──────────────────────────────┐
    │   NewPipeStreamProvider       │         │   InnerTubeStreamProvider     │
    │   (ANDAMIO / baseline)        │         │   (MOTOR PROPIO desde cero)   │
-   │   envuelve NewPipeExtractor   │         │   diferenciador + aprendizaje │
+   │   envuelve NewPipeExtractor   │         │   diferenciador central       │
    └──────────────────────────────┘         └──────────────────────────────┘
         red de seguridad inicial                 se construye en paralelo;
         y referencia de comportamiento           reemplaza al andamio cuando

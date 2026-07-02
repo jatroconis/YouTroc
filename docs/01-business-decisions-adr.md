@@ -4,7 +4,7 @@
 
 ## Contexto del proyecto
 
-**YouTroc** es un CLIENTE de YouTube sin anuncios para Android TV, construido desde cero. Es de uso personal (sideload), NO está destinado a tiendas de aplicaciones, y se trata como un proyecto serio y grande. El único usuario y dueño es el propio desarrollador.
+**YouTroc** es un CLIENTE de YouTube sin anuncios para Android TV, construido desde cero. Es de uso personal (sideload), NO está destinado a tiendas de aplicaciones, y se trata como un proyecto serio y grande. El único usuario y dueño es el propio desarrollador (actualizado por **ADR-10**: ahora proyecto open-source, con distribución por sideload y releases en GitHub).
 
 Este documento es la fuente de verdad de las decisiones. Cada ADR es independiente y se puede revisar/superar más adelante manteniendo el historial. El orden de lectura recomendado es de ADR-0 hacia abajo: las primeras decisiones (ideología, hardware) condicionan a las siguientes.
 
@@ -45,7 +45,7 @@ Construir un cliente desde cero (camino B) que consume la API **InnerTube**. La 
 **Consecuencias:**
 - (+) Sin anuncios por diseño, sin frágiles parches que rompen con cada actualización del APK oficial.
 - (+) Sin necesidad de DNS sinkhole, sin MITM, sin microG.
-- (+) Control total del cliente: es la diferencia y el principal objetivo de aprendizaje del proyecto.
+- (+) Control total del cliente: es el diferenciador central del proyecto.
 - (−) Asumimos la responsabilidad de extraer streams reproducibles desde InnerTube, lo que conlleva el riesgo de mantenimiento del motor de extracción (ver ADR-5).
 - (−) Dependemos de la estabilidad de la API InnerTube y del CDN `googlevideo`; somos el mejor CLIENTE, no un mejor YouTube.
 
@@ -264,7 +264,7 @@ Aplicar ports/adapters SOLO donde hay volatilidad real o valor de aislamiento pa
 **Estado:** Aceptada
 
 **Contexto:**
-El corazón del producto es resolver streams reproducibles desde InnerTube ignorando los anuncios. Hacerlo bien es el diferenciador y el principal objetivo de aprendizaje, pero también es la pieza más volátil y arriesgada (defensas anti-bot de YouTube). Hay que decidir si construirlo o reutilizar una librería.
+El corazón del producto es resolver streams reproducibles desde InnerTube ignorando los anuncios. Hacerlo bien es el diferenciador central del proyecto, pero también es la pieza más volátil y arriesgada (defensas anti-bot de YouTube). Hay que decidir si construirlo o reutilizar una librería.
 
 **Decisión:**
 Construir un **motor de extracción InnerTube propio desde cero**, detrás del puerto `StreamProvider`. Para mitigar el riesgo y secuenciar el trabajo:
@@ -273,19 +273,19 @@ Construir un **motor de extracción InnerTube propio desde cero**, detrás del p
 3. Reemplazar el andamio cuando el motor propio iguale a la referencia.
 
 **Razón:**
-- El motor propio es el diferenciador y el objetivo de aprendizaje #1 del proyecto.
+- El motor propio es el diferenciador central del proyecto.
 - El andamio NewPipe garantiza una vertical slice funcional desde temprano y sirve de red de seguridad y de referencia de comportamiento mientras maduramos el motor propio.
 - El puerto único permite cambiar de motor sin tocar features (habilitado por ADR-4).
 
 **Consecuencias:**
 - (+) Vertical slice reproduciendo video real desde el inicio (con andamio), sin esperar al motor propio.
-- (+) Diferenciador real y aprendizaje profundo del protocolo InnerTube.
+- (+) Diferenciador real: control total del protocolo InnerTube.
 - (+) Red de seguridad: si el motor propio falla, el andamio sigue disponible detrás del mismo puerto.
 - (−) **Es el RIESGO #1 del proyecto:** PoToken, resolución de la n-signature, BotGuard, visitor-data y bloqueos de tipo "not a bot" exigen mantenimiento casi de guardia (near on-call).
 - (−) Dependencia continua de los cambios del lado de YouTube; el motor puede romperse sin aviso.
 
 **Alternativas consideradas:**
-- **Usar NewPipeExtractor como motor definitivo:** descartado como objetivo final; anula el diferenciador y el aprendizaje, aunque se acepta como andamio temporal.
+- **Usar NewPipeExtractor como motor definitivo:** descartado como objetivo final; anula el diferenciador del producto, aunque se acepta como andamio temporal.
 - **No abstraer el motor (acoplarlo a las features):** descartado; impediría el patrón andamio→propio y violaría ADR-4.
 
 **Evidencia (verificada):**
@@ -501,7 +501,7 @@ El proyecto arrancó como cliente personal para un único equipo (ADR-1: TCL 55C
 **Decisión:**
 1. **Licencia.** YouTroc pasa a ser **open-source bajo GPL-3.0-or-later**.
 2. **Target de hardware.** El objetivo pasa a **multi-target Android TV** (minSdk 26); el **TCL 55C6K queda como dispositivo de referencia/baseline**, no como piso y techo.
-3. **Naturaleza del proyecto.** Sigue siendo un proyecto **educativo**, con un disclaimer honesto (no afiliado a YouTube/Google; el acceso por medios no oficiales puede infringir sus ToS).
+3. **Naturaleza del proyecto.** Es un proyecto **serio y de código abierto** —no un ejercicio educativo—, con un disclaimer honesto (cliente no oficial, no afiliado a YouTube/Google; el acceso por medios no oficiales puede infringir sus ToS).
 
 **Razón:**
 - La arquitectura ya es Android TV genérica (hexagonal, Media3 con fallback de códec AV1→VP9→H.264), sin lógica atada al C6K, así que multi-target es factible a bajo costo.
