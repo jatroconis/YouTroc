@@ -38,6 +38,19 @@ El roadmap es estrictamente **incremental por riesgo**: primero se prueba la hip
 | **F2.E** | Acciones de cuenta | Like, suscribir, añadir a playlist | Autenticado | Compose for TV |
 | **F2.F** | SponsorBlock | Saltar segmentos patrocinados durante la reproducción | Autenticado | Compose for TV |
 
+### Motor InnerTube propio — el diferenciador central (hoja de ruta)
+
+El scaffold de extracción es **NewPipeExtractor**; en paralelo se construye un **motor InnerTube propio** detrás de los mismos ports (estrategia **strangler-fig**, con NewPipe como red de seguridad / fallback). Se avanza **por capacidad**, empezando por **metadata** (búsqueda → trending), que **no** requiere cipher ni PoToken, y difiriendo la **extracción de streams** — la parte dura, gated por PoToken/cipher (riesgo #1).
+
+**Por qué vale la pena poseer el motor** — los diferenciadores que solo se habilitan controlando la extracción. Todos dependen de poseer la extracción de *streams*, así que van **después** del primer slice de metadata:
+
+1. **Prefetch especulativo del próximo video** — pre-resolver los streams del primer "A continuación" mientras el actual reproduce → arranque casi instantáneo.
+2. **Racing multi-cliente** — probar varios clientes InnerTube en paralelo y tomar el primero usable → resiliencia cuando YouTube estrangula un cliente.
+3. **Formatos/códecs afinados al hardware** — pedir exactamente lo que el SoC decodifica mejor (AV1 por HW en el C6K) → mejor primer-frame, menos fallbacks de decodificación.
+4. **`:data:extraction` como librería open-source reutilizable** — es un módulo Kotlin/JVM puro detrás de ports; publicable como lo es el propio NewPipeExtractor.
+
+> **Stack del motor:** Kotlin + coroutines + OkHttp + kotlinx.serialization. **Sin Rust / nativo** (ADR-8): la extracción es **I/O-bound** (domina la latencia de red), así que el rendimiento sale de la **arquitectura** —menos round-trips, concurrencia, caché, parseo tolerante— y no del lenguaje.
+
 ## 1.2 Hito 0 — Vertical slice (sin UI)
 
 **Propósito:** probar la hipótesis nuclear del proyecto el día 1. Si esto no funciona, nada más importa.
