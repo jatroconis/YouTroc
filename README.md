@@ -1,4 +1,4 @@
-# youtroc
+# YouTroc
 
 Cliente de **YouTube para Android TV**, sin anuncios *por construcción*, escrito desde cero en Kotlin. Es un proyecto **personal y educativo**: su objetivo real es aprender arquitectura de software (Clean / Hexagonal / Screaming Architecture, TDD, Compose for TV) construyendo un producto de verdad, no distribuir una app.
 
@@ -16,7 +16,7 @@ Cliente de **YouTube para Android TV**, sin anuncios *por construcción*, escrit
 
 ## Qué es
 
-youtroc replica la experiencia del YouTube oficial para TV (rail lateral colapsable, shelves, reproductor propio a pantalla completa) pero **sin anuncios por construcción**: la extracción se hace con un motor tipo InnerTube (andamiado sobre NewPipeExtractor) que directamente **no deserializa** los `adPlacements` / `playerAds`, así que no hay anuncios que saltar — simplemente no existen en el modelo de datos.
+YouTroc replica la experiencia del YouTube oficial para TV (rail lateral colapsable, shelves, reproductor propio a pantalla completa) pero **sin anuncios por construcción**: la extracción se hace con un motor tipo InnerTube (andamiado sobre NewPipeExtractor) que directamente **no deserializa** los `adPlacements` / `playerAds`, así que no hay anuncios que saltar — simplemente no existen en el modelo de datos.
 
 La **regla de oro** del producto: comportarse como el YouTube real. Un click en una tarjeta reproduce directo (sin pantalla intermedia de confirmación), la información y los relacionados viven *dentro* del reproductor, y los streams en vivo se reproducen igual que los VOD.
 
