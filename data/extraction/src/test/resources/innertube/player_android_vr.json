@@ -1,0 +1,123 @@
+{
+  "playabilityStatus": {
+    "status": "OK"
+  },
+  "streamingData": {
+    "expiresInSeconds": "21540",
+    "formats": [
+      {
+        "url": "https://rr4---sn-vgqsrnld.googlevideo.com/videoplayback?expire=1783072662&ei=NjNHar6fCMHiy_sPke2EgAE&ip=186.86.110.4&id=o-AFSTD9BO9J_kXdXOZK-NfgKStgPWo_D0405DGP6QwSuC&itag=18&source=youtube&requiressl=yes&xpc=EgVo2aDSNQ%3D%3D&met=1783051062%2C&mh=7c&mm=18%2C29&mn=sn-vgqsrnld%2Csn-cvb7sn7k&ms=aub%2Crdu&mv=m&mvi=4&pl=24&rms=aub%2Caub&pcm2=yes&initcwndbps=1243750&bui=ARmQxEW8_Eg5LAowBsyTivMF1pL7fxEzb33EORwnF_f2GuW8hcIDJevzNOm7Eb3B6NT6_69OfGKLlTXz&spc=SQ-umoOHkqF9KunxxUrRbg&vprv=1&svpuc=1&mime=video%2Fmp4&rqh=1&cnr=14&ratebypass=yes&dur=213.089&lmt=1766960953317159&mt=1783050736&fvip=3&fexp=51565115%2C51946837%2C52017147&c=ANDROID_VR&txp=5538534&sparams=expire%2Cei%2Cip%2Cid%2Citag%2Csource%2Crequiressl%2Cxpc%2Cpcm2%2Cbui%2Cspc%2Cvprv%2Csvpuc%2Cmime%2Crqh%2Ccnr%2Cratebypass%2Cdur%2Clmt&sig=AHEqNM4wRQIgG8Z4LXLWv7RrElCOYUvzJT1qqrox23cfkasoaq0Bt4wCIQCbeQkfwz9NmtKDJV6LtWK7fhoZmk9AbdgIRMIxGoW7oQ%3D%3D&lsparams=met%2Cmh%2Cmm%2Cmn%2Cms%2Cmv%2Cmvi%2Cpl%2Crms%2Cinitcwndbps&lsig=APaTxxMwRgIhAPQwTgiIchPJuLn3Qfw4eObCQZRsh4L7hXdS0-a6nNOSAiEAvMH453CcmJbFzYK7Peestz72T3loWm8pCAO5a9CB3nM%3D",
+        "itag": 18,
+        "mimeType": "video/mp4; codecs=\"avc1.42001E, mp4a.40.2\"",
+        "bitrate": 444226,
+        "width": 640,
+        "height": 360,
+        "fps": 25,
+        "qualityLabel": "360p"
+      }
+    ],
+    "adaptiveFormats": [
+      {
+        "url": "https://rr4---sn-vgqsrnld.googlevideo.com/videoplayback?expire=1783072662&ei=NjNHar6fCMHiy_sPke2EgAE&ip=186.86.110.4&id=o-AFSTD9BO9J_kXdXOZK-NfgKStgPWo_D0405DGP6QwSuC&itag=313&source=youtube&requiressl=yes&xpc=EgVo2aDSNQ%3D%3D&met=1783051062%2C&mh=7c&mm=18%2C29&mn=sn-vgqsrnld%2Csn-cvb7sn7k&ms=aub%2Crdu&mv=m&mvi=4&pl=24&rms=aub%2Caub&pcm2=yes&initcwndbps=1243750&bui=ARmQxEXGOIOngCREBWG_foizBcTQWwJIeZCxdeMOJzvS_RXc42BQwZ0UocOFThUfoacXPAgBTwAbb-Fm&spc=SQ-umvGEqqFNLg&vprv=1&svpuc=1&mime=video%2Fwebm&rqh=1&gir=yes&clen=358608461&dur=213.040&lmt=1766963492248817&mt=1783050736&fvip=3&keepalive=yes&fexp=51565115%2C51946837%2C52017147&c=ANDROID_VR&txp=5532534&sparams=expire%2Cei%2Cip%2Cid%2Citag%2Csource%2Crequiressl%2Cxpc%2Cpcm2%2Cbui%2Cspc%2Cvprv%2Csvpuc%2Cmime%2Crqh%2Cgir%2Cclen%2Cdur%2Clmt&sig=AHEqNM4wRAIgb9bKVvkODRm0jFMCxRCLZ0jDBvEdEmz7HOSbKF5I6eUCIFFSACijis-stwJjTR89vZ_NPTExulGV8TMbDuoS33r1&lsparams=met%2Cmh%2Cmm%2Cmn%2Cms%2Cmv%2Cmvi%2Cpl%2Crms%2Cinitcwndbps&lsig=APaTxxMwRgIhAPQwTgiIchPJuLn3Qfw4eObCQZRsh4L7hXdS0-a6nNOSAiEAvMH453CcmJbFzYK7Peestz72T3loWm8pCAO5a9CB3nM%3D",
+        "itag": 313,
+        "mimeType": "video/webm; codecs=\"vp9\"",
+        "bitrate": 18076636,
+        "contentLength": "358608461",
+        "approxDurationMs": "213040",
+        "initRange": {
+          "start": "0",
+          "end": "220"
+        },
+        "indexRange": {
+          "start": "221",
+          "end": "893"
+        },
+        "width": 3840,
+        "height": 2160,
+        "fps": 25,
+        "qualityLabel": "2160p"
+      },
+      {
+        "url": "https://rr4---sn-vgqsrnld.googlevideo.com/videoplayback?expire=1783072662&ei=NjNHar6fCMHiy_sPke2EgAE&ip=186.86.110.4&id=o-AFSTD9BO9J_kXdXOZK-NfgKStgPWo_D0405DGP6QwSuC&itag=401&source=youtube&requiressl=yes&xpc=EgVo2aDSNQ%3D%3D&met=1783051062%2C&mh=7c&mm=18%2C29&mn=sn-vgqsrnld%2Csn-cvb7sn7k&ms=aub%2Crdu&mv=m&mvi=4&pl=24&rms=aub%2Caub&pcm2=yes&initcwndbps=1243750&bui=ARmQxEXGOIOngCREBWG_foizBcTQWwJIeZCxdeMOJzvS_RXc42BQwZ0UocOFThUfoacXPAgBTwAbb-Fm&spc=SQ-umvGEqqFNLg&vprv=1&svpuc=1&mime=video%2Fmp4&rqh=1&gir=yes&clen=240334643&dur=213.040&lmt=1766961226342025&mt=1783050736&fvip=3&keepalive=yes&fexp=51565115%2C51946837%2C52017147&c=ANDROID_VR&txp=5532534&sparams=expire%2Cei%2Cip%2Cid%2Citag%2Csource%2Crequiressl%2Cxpc%2Cpcm2%2Cbui%2Cspc%2Cvprv%2Csvpuc%2Cmime%2Crqh%2Cgir%2Cclen%2Cdur%2Clmt&sig=AHEqNM4wRQIgIDsopVzVriUuBCaTSHAap3Z0JhwIcFp_O-9FXBMUhFgCIQDESlt3XnGRqdN1K5fzuE_kzG07Rn1NYZO2ykQBVD7CjA%3D%3D&lsparams=met%2Cmh%2Cmm%2Cmn%2Cms%2Cmv%2Cmvi%2Cpl%2Crms%2Cinitcwndbps&lsig=APaTxxMwRgIhAPQwTgiIchPJuLn3Qfw4eObCQZRsh4L7hXdS0-a6nNOSAiEAvMH453CcmJbFzYK7Peestz72T3loWm8pCAO5a9CB3nM%3D",
+        "itag": 401,
+        "mimeType": "video/mp4; codecs=\"av01.0.12M.08\"",
+        "bitrate": 17400774,
+        "contentLength": "240334643",
+        "approxDurationMs": "213040",
+        "initRange": {
+          "start": "0",
+          "end": "700"
+        },
+        "indexRange": {
+          "start": "701",
+          "end": "1188"
+        },
+        "width": 3840,
+        "height": 2160,
+        "fps": 25,
+        "qualityLabel": "2160p"
+      },
+      {
+        "url": "https://rr4---sn-vgqsrnld.googlevideo.com/videoplayback?expire=1783072662&ei=NjNHar6fCMHiy_sPke2EgAE&ip=186.86.110.4&id=o-AFSTD9BO9J_kXdXOZK-NfgKStgPWo_D0405DGP6QwSuC&itag=137&source=youtube&requiressl=yes&xpc=EgVo2aDSNQ%3D%3D&met=1783051062%2C&mh=7c&mm=18%2C29&mn=sn-vgqsrnld%2Csn-cvb7sn7k&ms=aub%2Crdu&mv=m&mvi=4&pl=24&rms=aub%2Caub&pcm2=yes&initcwndbps=1243750&bui=ARmQxEXGOIOngCREBWG_foizBcTQWwJIeZCxdeMOJzvS_RXc42BQwZ0UocOFThUfoacXPAgBTwAbb-Fm&spc=SQ-umvGEqqFNLg&vprv=1&svpuc=1&mime=video%2Fmp4&rqh=1&gir=yes&clen=80911999&dur=213.040&lmt=1766957926174250&mt=1783050736&fvip=3&keepalive=yes&fexp=51565115%2C51946837%2C52017147&c=ANDROID_VR&txp=5532534&sparams=expire%2Cei%2Cip%2Cid%2Citag%2Csource%2Crequiressl%2Cxpc%2Cpcm2%2Cbui%2Cspc%2Cvprv%2Csvpuc%2Cmime%2Crqh%2Cgir%2Cclen%2Cdur%2Clmt&sig=AHEqNM4wRAIgdt-TdjnnRh6K5Ej7wVxePx8y37meEH-9jUky8ygesOwCICVUxSqvKtdtD4A2F_dMRcsEm8alyFAFe3d2sZ3ja_mp&lsparams=met%2Cmh%2Cmm%2Cmn%2Cms%2Cmv%2Cmvi%2Cpl%2Crms%2Cinitcwndbps&lsig=APaTxxMwRgIhAPQwTgiIchPJuLn3Qfw4eObCQZRsh4L7hXdS0-a6nNOSAiEAvMH453CcmJbFzYK7Peestz72T3loWm8pCAO5a9CB3nM%3D",
+        "itag": 137,
+        "mimeType": "video/mp4; codecs=\"avc1.640028\"",
+        "bitrate": 4334157,
+        "contentLength": "80911999",
+        "approxDurationMs": "213040",
+        "initRange": {
+          "start": "0",
+          "end": "741"
+        },
+        "indexRange": {
+          "start": "742",
+          "end": "1229"
+        },
+        "width": 1920,
+        "height": 1080,
+        "fps": 25,
+        "qualityLabel": "1080p"
+      },
+      {
+        "url": "https://rr4---sn-vgqsrnld.googlevideo.com/videoplayback?expire=1783072662&ei=NjNHar6fCMHiy_sPke2EgAE&ip=186.86.110.4&id=o-AFSTD9BO9J_kXdXOZK-NfgKStgPWo_D0405DGP6QwSuC&itag=139&source=youtube&requiressl=yes&xpc=EgVo2aDSNQ%3D%3D&met=1783051062%2C&mh=7c&mm=18%2C29&mn=sn-vgqsrnld%2Csn-cvb7sn7k&ms=aub%2Crdu&mv=m&mvi=4&pl=24&rms=aub%2Caub&pcm2=yes&initcwndbps=1243750&bui=ARmQxEXGOIOngCREBWG_foizBcTQWwJIeZCxdeMOJzvS_RXc42BQwZ0UocOFThUfoacXPAgBTwAbb-Fm&spc=SQ-umvGEqqFNLg&vprv=1&svpuc=1&mime=audio%2Fmp4&rqh=1&gir=yes&clen=1300631&dur=213.159&lmt=1766955925459591&mt=1783050736&fvip=3&keepalive=yes&fexp=51565115%2C51946837%2C52017147&c=ANDROID_VR&txp=5532534&sparams=expire%2Cei%2Cip%2Cid%2Citag%2Csource%2Crequiressl%2Cxpc%2Cpcm2%2Cbui%2Cspc%2Cvprv%2Csvpuc%2Cmime%2Crqh%2Cgir%2Cclen%2Cdur%2Clmt&sig=AHEqNM4wRgIhAPwIyRWTtRFeIdNHjKzKPZ-nltXSW-PrvFnEKpxS-gdJAiEA7s4QBtHkTx3e0vJYkQrD4saiWJdM9WeHRerymob-v5E%3D&lsparams=met%2Cmh%2Cmm%2Cmn%2Cms%2Cmv%2Cmvi%2Cpl%2Crms%2Cinitcwndbps&lsig=APaTxxMwRgIhAPQwTgiIchPJuLn3Qfw4eObCQZRsh4L7hXdS0-a6nNOSAiEAvMH453CcmJbFzYK7Peestz72T3loWm8pCAO5a9CB3nM%3D",
+        "itag": 139,
+        "mimeType": "audio/mp4; codecs=\"mp4a.40.5\"",
+        "bitrate": 50152,
+        "contentLength": "1300631",
+        "approxDurationMs": "213159",
+        "initRange": {
+          "start": "0",
+          "end": "731"
+        },
+        "indexRange": {
+          "start": "732",
+          "end": "1027"
+        },
+        "audioSampleRate": "22050",
+        "audioChannels": 2
+      },
+      {
+        "url": "https://rr4---sn-vgqsrnld.googlevideo.com/videoplayback?expire=1783072662&ei=NjNHar6fCMHiy_sPke2EgAE&ip=186.86.110.4&id=o-AFSTD9BO9J_kXdXOZK-NfgKStgPWo_D0405DGP6QwSuC&itag=251&source=youtube&requiressl=yes&xpc=EgVo2aDSNQ%3D%3D&met=1783051062%2C&mh=7c&mm=18%2C29&mn=sn-vgqsrnld%2Csn-cvb7sn7k&ms=aub%2Crdu&mv=m&mvi=4&pl=24&rms=aub%2Caub&pcm2=yes&initcwndbps=1243750&bui=ARmQxEXGOIOngCREBWG_foizBcTQWwJIeZCxdeMOJzvS_RXc42BQwZ0UocOFThUfoacXPAgBTwAbb-Fm&spc=SQ-umvGEqqFNLg&vprv=1&svpuc=1&mime=audio%2Fwebm&rqh=1&gir=yes&clen=3433755&dur=213.061&lmt=1766955883819090&mt=1783050736&fvip=3&keepalive=yes&fexp=51565115%2C51946837%2C52017147&c=ANDROID_VR&txp=5532534&sparams=expire%2Cei%2Cip%2Cid%2Citag%2Csource%2Crequiressl%2Cxpc%2Cpcm2%2Cbui%2Cspc%2Cvprv%2Csvpuc%2Cmime%2Crqh%2Cgir%2Cclen%2Cdur%2Clmt&sig=AHEqNM4wRQIhAKvG1VfpylNfM8yLt6rv50HDsGCUmZ8aJ7rthVHbW3USAiBgWG31dUpzMhWP1WXvIC20PmDad1T4PlXz7rMXsW7mfw%3D%3D&lsparams=met%2Cmh%2Cmm%2Cmn%2Cms%2Cmv%2Cmvi%2Cpl%2Crms%2Cinitcwndbps&lsig=APaTxxMwRgIhAPQwTgiIchPJuLn3Qfw4eObCQZRsh4L7hXdS0-a6nNOSAiEAvMH453CcmJbFzYK7Peestz72T3loWm8pCAO5a9CB3nM%3D",
+        "itag": 251,
+        "mimeType": "audio/webm; codecs=\"opus\"",
+        "bitrate": 136544,
+        "contentLength": "3433755",
+        "approxDurationMs": "213061",
+        "initRange": {
+          "start": "0",
+          "end": "258"
+        },
+        "indexRange": {
+          "start": "259",
+          "end": "629"
+        },
+        "audioSampleRate": "48000",
+        "audioChannels": 2
+      }
+    ]
+  },
+  "videoDetails": {
+    "videoId": "dQw4w9WgXcQ",
+    "lengthSeconds": "213",
+    "isLiveContent": false
+  }
+}

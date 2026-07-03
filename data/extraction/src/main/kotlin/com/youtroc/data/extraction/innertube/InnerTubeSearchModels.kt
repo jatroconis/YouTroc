@@ -31,6 +31,15 @@ internal data class Client(
     val hl: String,
     /** Region code (e.g. "AR"); omitted entirely for a blank/absent region. */
     val gl: String? = null,
+    /**
+     * ANDROID_VR device identity, used only by [com.youtroc.data.extraction.innertube.InnerTubeStreamProvider]'s
+     * player request. Nullable + defaulted so the shared WEB search/detail
+     * requests keep omitting these fields untouched (`explicitNulls = false`
+     * drops a null field entirely from the encoded JSON body).
+     */
+    val deviceMake: String? = null,
+    val deviceModel: String? = null,
+    val androidSdkVersion: Int? = null,
 )
 
 // ---- Response ----

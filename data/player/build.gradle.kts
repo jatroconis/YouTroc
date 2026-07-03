@@ -20,6 +20,12 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+
+    // Robolectric's @RunWith(RobolectricTestRunner::class) needs the merged
+    // manifest + resources on the unit test classpath (R1 gate: DashManifestParseGateTest).
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
 }
 
 kotlin {
@@ -46,6 +52,14 @@ dependencies {
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.kotlinx.coroutines.test)
     testRuntimeOnly(libs.junit.platform.launcher)
+
+    // R1 gate (Media3 MPD-parse): DashManifestParseGateTest needs android.net.Uri +
+    // XmlPullParser, only available under Robolectric's shadow Android runtime.
+    // JUnit4 + vintage-engine bridges Robolectric's @RunWith into the same
+    // JUnit Platform run as the rest of this module's JUnit5 tests.
+    testImplementation(libs.robolectric)
+    testImplementation(libs.junit4)
+    testRuntimeOnly(libs.junit.vintage.engine)
 }
 
 tasks.withType<Test>().configureEach {

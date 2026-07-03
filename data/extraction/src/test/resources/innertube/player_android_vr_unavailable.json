@@ -1,0 +1,15 @@
+{
+  "playabilityStatus": {
+    "status": "UNPLAYABLE",
+    "reason": "La grabación de esta emisión en directo no está disponible."
+  },
+  "streamingData": {
+    "formats": [],
+    "adaptiveFormats": []
+  },
+  "videoDetails": {
+    "videoId": "jfKfPfyJRdk",
+    "lengthSeconds": "121601512",
+    "isLiveContent": true
+  }
+}

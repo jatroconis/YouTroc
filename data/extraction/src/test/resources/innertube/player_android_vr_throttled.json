@@ -1,0 +1,26 @@
+{
+  "playabilityStatus": {
+    "status": "OK"
+  },
+  "streamingData": {
+    "expiresInSeconds": "21540",
+    "formats": [
+      {
+        "url": "https://rr4---sn-vgqsrnld.googlevideo.com/videoplayback?expire=1783072662&ei=NjNHar6fCMHiy_sPke2EgAE&ip=186.86.110.4&id=o-AFSTD9BO9J_kXdXOZK-NfgKStgPWo_D0405DGP6QwSuC&itag=18&source=youtube&requiressl=yes&xpc=EgVo2aDSNQ%3D%3D&met=1783051062%2C&mh=7c&mm=18%2C29&mn=sn-vgqsrnld%2Csn-cvb7sn7k&ms=aub%2Crdu&mv=m&mvi=4&pl=24&rms=aub%2Caub&pcm2=yes&initcwndbps=1243750&bui=ARmQxEW8_Eg5LAowBsyTivMF1pL7fxEzb33EORwnF_f2GuW8hcIDJevzNOm7Eb3B6NT6_69OfGKLlTXz&spc=SQ-umoOHkqF9KunxxUrRbg&vprv=1&svpuc=1&mime=video%2Fmp4&rqh=1&cnr=14&ratebypass=yes&dur=213.089&lmt=1766960953317159&mt=1783050736&fvip=3&fexp=51565115%2C51946837%2C52017147&c=ANDROID_VR&txp=5538534&sparams=expire%2Cei%2Cip%2Cid%2Citag%2Csource%2Crequiressl%2Cxpc%2Cpcm2%2Cbui%2Cspc%2Cvprv%2Csvpuc%2Cmime%2Crqh%2Ccnr%2Cratebypass%2Cdur%2Clmt&sig=AHEqNM4wRQIgG8Z4LXLWv7RrElCOYUvzJT1qqrox23cfkasoaq0Bt4wCIQCbeQkfwz9NmtKDJV6LtWK7fhoZmk9AbdgIRMIxGoW7oQ%3D%3D&lsparams=met%2Cmh%2Cmm%2Cmn%2Cms%2Cmv%2Cmvi%2Cpl%2Crms%2Cinitcwndbps&lsig=APaTxxMwRgIhAPQwTgiIchPJuLn3Qfw4eObCQZRsh4L7hXdS0-a6nNOSAiEAvMH453CcmJbFzYK7Peestz72T3loWm8pCAO5a9CB3nM%3D",
+        "itag": 18,
+        "mimeType": "video/mp4; codecs=\"avc1.42001E, mp4a.40.2\"",
+        "bitrate": 444226,
+        "width": 640,
+        "height": 360,
+        "fps": 25,
+        "qualityLabel": "360p"
+      }
+    ],
+    "adaptiveFormats": []
+  },
+  "videoDetails": {
+    "videoId": "dQw4w9WgXcQ",
+    "lengthSeconds": "213",
+    "isLiveContent": false
+  }
+}

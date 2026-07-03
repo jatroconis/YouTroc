@@ -8,6 +8,8 @@ import com.youtroc.core.domain.playback.GetPlayableStreams
 import com.youtroc.core.domain.stream.StreamResult
 import com.youtroc.core.domain.video.VideoId
 import com.youtroc.data.extraction.NewPipeStreamProvider
+import com.youtroc.data.extraction.innertube.InnerTubeStreamProvider
+import com.youtroc.data.extraction.stream.FallbackStreamProvider
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -58,12 +60,17 @@ class PlayerViewModel(
     companion object {
         /**
          * Composition root for extraction: the only place that wires the
-         * concrete [NewPipeStreamProvider] adapter into the domain use case.
+         * concrete [FallbackStreamProvider] into the domain use case --
+         * own-first ([InnerTubeStreamProvider]) with [NewPipeStreamProvider]
+         * as the safety net for android_vr throttling, errors, and live
+         * video (own is VOD-only; D4).
          */
         fun factory(videoId: String, title: String) = viewModelFactory {
             initializer {
                 PlayerViewModel(
-                    getPlayableStreams = GetPlayableStreams(NewPipeStreamProvider()),
+                    getPlayableStreams = GetPlayableStreams(
+                        FallbackStreamProvider(InnerTubeStreamProvider(), NewPipeStreamProvider()),
+                    ),
                     videoId = videoId,
                     title = title,
                 )
