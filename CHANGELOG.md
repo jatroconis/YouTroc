@@ -5,6 +5,18 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+### Added
+- **Motor de extracción InnerTube propio** para búsqueda, detalle de video y extracción de streams VOD, migrado por capas *(strangler-fig)* detrás de los mismos puertos de dominio que ya existían. Cada capacidad prueba primero el motor propio y cae automáticamente a NewPipeExtractor si falla (own-first, NewPipe de respaldo). Los streams VOD se resuelven vía el cliente `ANDROID_VR` (sin cipher ni PoToken) y se ensamblan en un DASH MPD propio. Los streams en vivo siguen usando NewPipe.
+- **HDR10 / HLG en el reproductor**: cuando el stream resuelto trae HDR y la pantalla lo soporta, el reproductor pide modo de color HDR (`Window.setColorMode`); si no se cumple alguna condición, la reproducción sigue en SDR sin cambios. *(Render HDR en pantalla real: validación on-device pendiente.)*
+- **Prefetch especulativo del siguiente video**: mientras se reproduce el video actual, YouTroc resuelve en segundo plano el stream del primer video de "A continuación", para que avanzar a él sea casi instantáneo. Es conservador: un solo prefetch a la vez, solo después de reproducción estable, y se salta si el video actual cayó al fallback de NewPipe (para no sumar carga extra). *(Ganancia de latencia percibida: validación on-device pendiente.)*
+
+### Changed
+- **Home**: el feed principal dejó de ser el kiosco Trending genérico de NewPipe; ahora muestra un shelf **"Popular en {ciudad/región}"** armado por el motor propio, con NewPipe como *fallback*. El "Trending" global real fue retirado por YouTube del lado del servidor; este feed regional es el reemplazo funcional disponible hoy. *(Código listo; verificación visual on-device pendiente.)*
+
+### Known limitations
+- El shelf regional del Home depende de la señal de región/red que recibe la búsqueda semilla (config. regional del dispositivo); la etiqueta de ciudad/región y su contenido los arma YouTube del lado del servidor — no hay geolocalización propia en el cliente.
+- HDR10/HLG y el prefetch especulativo están completos a nivel de código pero **sin validar en dispositivo real** (render HDR y ganancia de latencia percibida, respectivamente).
+
 ## [0.1.0-alpha] - 2026-07-02
 
 Primer release público (pre-release). Software temprano: reproduce de verdad, pero

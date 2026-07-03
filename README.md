@@ -18,19 +18,21 @@ YouTroc **no está afiliado, asociado ni respaldado** por YouTube, Google o sus 
 
 YouTroc replica la experiencia del YouTube oficial para TV (rail lateral colapsable, shelves, reproductor propio a pantalla completa) **sin anuncios**. La **regla de oro** del producto: comportarse como el YouTube real — un click en una tarjeta reproduce directo (sin pantalla intermedia), la info y los relacionados viven *dentro* del reproductor, y los streams en vivo se reproducen igual que los VOD.
 
-La extracción usa un motor tipo InnerTube (hoy andamiado sobre [NewPipeExtractor](https://github.com/TeamNewPipe/NewPipeExtractor)) que **no deserializa** los `adPlacements` / `playerAds`: no hay anuncios que saltar porque no existen en el modelo de datos.
+La extracción corre sobre un **motor InnerTube propio**, migrado por capas *(strangler-fig)*: búsqueda, detalle de video, el feed regional del Home ("Popular en {región}") y la extracción de streams VOD (cliente `ANDROID_VR`, sin cipher ni PoToken, ensamblados en un DASH MPD propio) ya corren con motor propio, con [NewPipeExtractor](https://github.com/TeamNewPipe/NewPipeExtractor) como *fallback* automático si el motor propio falla. Los streams en vivo todavía usan NewPipe. Ninguno de los dos motores **deserializa** los `adPlacements` / `playerAds`: no hay anuncios que saltar porque no existen en el modelo de datos.
 
 ## Estado de las funciones
 
 | Función | Código | Validado en dispositivo |
 |---|---|---|
-| Catálogo Trending (Home) | ✅ | ✅ (C6K) |
+| Home: **"Popular en {región}"** (motor propio, regional) | ✅ | ⏳ pendiente |
 | Búsqueda con teclado en pantalla | ✅ | ✅ (C6K) |
 | Reproducción VOD (DASH/progresivo, ABR) | ✅ | ✅ (C6K) |
 | Reproducción **en vivo** (HLS / DASH-live) | ✅ | ✅ (C6K) |
 | Selector de **calidad** (⚙ → Ajustes → Calidad) | ✅ | ⏳ pendiente |
 | Panel **"A continuación"** dentro del player | ✅ | ⏳ pendiente |
 | Continuar viendo (posición local) | ✅ | ⏳ pendiente |
+| **HDR10 / HLG** en reproducción (fallback a SDR) | ✅ | ⏳ pendiente (render) |
+| **Prefetch** especulativo del siguiente video | ✅ | ⏳ pendiente (ganancia de latencia) |
 
 Fase 2 (login con cuenta vía OAuth device-code, páginas de canal, suscripciones, SponsorBlock, subtítulos) está fuera de alcance por ahora. Ver [`docs/05-roadmap-and-risks.md`](./docs/05-roadmap-and-risks.md).
 
@@ -72,7 +74,7 @@ Multi-módulo Gradle bajo **Screaming + Hexagonal + Clean Architecture**, con la
 |---|---|---|
 | `:core:domain` | Kotlin/JVM puro | El hexágono: `VideoId`, `Video`, `Stream`, `PlayableStreams`, `PlaybackManifest`, `PlaybackState`, `VideoQuality`, `VideoDetail`… + puertos (`StreamProvider`, `MediaPlayer`, `WatchProgressStore`, `VideoDetail`) y use cases. |
 | `:core:ui` | Android lib | Design system Compose for TV: theme, tokens, `VideoCardUi`, `ShelfRow`, logo. |
-| `:data:extraction` | Kotlin/JVM | Adaptador de extracción sobre **NewPipeExtractor**. Detección VOD/live, ensamblado DASH, selección de streams. Ad-free por construcción. |
+| `:data:extraction` | Kotlin/JVM | **Motor InnerTube propio** (búsqueda, detalle, streams VOD, feed regional del Home) con **NewPipeExtractor** como *fallback* automático (strangler-fig); en vivo sigue en NewPipe. Detección VOD/live, ensamblado DASH, selección de streams. Ad-free por construcción. |
 | `:data:player` | Android lib | Adaptador del puerto `MediaPlayer` sobre **Media3/ExoPlayer** (DASH, HLS, selección de calidad). |
 | `:data:persistence` | Android lib | Adaptador de `WatchProgressStore` sobre **DataStore Preferences**. Local-only. |
 | `:feature:playback` | Android lib | Overlay del reproductor hecho a mano en Compose for TV (transporte, scrubber, menú Ajustes→Calidad, indicador EN VIVO, panel "A continuación") + ViewModels. |
@@ -87,7 +89,7 @@ Patrones transversales: **container-presentational** (ViewModel + `StateFlow<UiS
 - **Kotlin** 100% · Gradle multi-módulo con version catalog (`gradle/libs.versions.toml`).
 - **Jetpack Compose for TV** (`androidx.tv:tv-material3`) — sin Leanback.
 - **Media3 / ExoPlayer** — DASH adaptativo, HLS (live), `SurfaceView`, `DefaultTrackSelector`.
-- **NewPipeExtractor** (JitPack) como andamio de extracción.
+- Motor de extracción **InnerTube propio** (búsqueda, detalle, streams VOD, feed regional del Home), con **NewPipeExtractor** (JitPack) como *fallback* automático; en vivo sigue en NewPipe.
 - **DataStore Preferences** · **Navigation Compose** · **Coil 3** · DI manual (sin Hilt).
 
 ---
