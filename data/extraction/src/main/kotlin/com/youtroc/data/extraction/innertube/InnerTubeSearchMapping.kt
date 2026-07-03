@@ -56,7 +56,7 @@ internal fun VideoRenderer.toVideoOrNull(): Video? {
  */
 internal fun ViewCountText?.parsedViewCount(): Long? {
     val raw = this?.simpleText ?: this?.runs?.joinToString("") { it.text.orEmpty() }
-    return raw?.filter { it.isDigit() }?.toLongOrNull()
+    return raw.toCountOrNull()
 }
 
 /**

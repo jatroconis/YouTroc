@@ -1,0 +1,293 @@
+{
+  "responseContext": {
+    "unknownDriftField": "schema-drift-is-tolerated"
+  },
+  "contents": {
+    "twoColumnWatchNextResults": {
+      "results": {
+        "results": {
+          "contents": [
+            {
+              "videoPrimaryInfoRenderer": {
+                "title": {
+                  "runs": [
+                    {
+                      "text": "Rick Astley - Never Gonna Give You Up (Official Video) (4K Remaster)"
+                    }
+                  ]
+                },
+                "viewCount": {
+                  "videoViewCountRenderer": {
+                    "viewCount": {
+                      "runs": [
+                        {
+                          "text": "4715"
+                        },
+                        {
+                          "text": " usuarios viéndolo ahora"
+                        }
+                      ]
+                    },
+                    "originalViewCount": "4715"
+                  }
+                },
+                "dateText": {
+                  "simpleText": "24 oct 2009"
+                },
+                "relativeDateText": {
+                  "simpleText": "hace 16 años"
+                }
+              }
+            },
+            {
+              "videoSecondaryInfoRenderer": {
+                "owner": {
+                  "videoOwnerRenderer": {
+                    "thumbnail": {
+                      "thumbnails": [
+                        {
+                          "url": "https://yt3.ggpht.com/MOWpaiGJdgN4aKMI-NGQLL4jMVP3aDORlQpOBWooi0GSE2TGt4_9ncyepk1pCh-yWQ795AhPbw=s88-c-k-c0x00ffffff-no-rj",
+                          "width": 88,
+                          "height": 88
+                        }
+                      ]
+                    },
+                    "title": {
+                      "runs": [
+                        {
+                          "text": "Rick Astley",
+                          "navigationEndpoint": {
+                            "commandMetadata": {
+                              "webCommandMetadata": {
+                                "url": "/@RickAstleyYT",
+                                "webPageType": "WEB_PAGE_TYPE_CHANNEL",
+                                "rootVe": 3611,
+                                "apiUrl": "/youtubei/v1/browse"
+                              }
+                            },
+                            "browseEndpoint": {
+                              "browseId": "UCuAXFkgsw1L7xaCfnd5JJOw",
+                              "canonicalBaseUrl": "/@RickAstleyYT"
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    "subscriberCountText": {
+                      "simpleText": "4,51 M de suscriptores"
+                    }
+                  }
+                },
+                "attributedDescription": {
+                  "content": "The official video for “Never Gonna Give You Up” by Rick Astley.\n\nNever: The Autobiography 📚 OUT NOW!\nFollow this link to get your copy and listen to Rick’s ‘Never’ playlist ❤️ #RickAstleyNever\nhttps://linktr.ee/rickastleynever"
+                },
+                "defaultExpanded": false
+              }
+            },
+            {
+              "compositeVideoPrimaryInfoRenderer": {
+                "unknownDriftField": "schema-drift-is-tolerated"
+              }
+            }
+          ],
+          "trackingParams": "unused-top-level-tracking-params"
+        }
+      },
+      "secondaryResults": {
+        "secondaryResults": {
+          "results": [
+            {
+              "lockupViewModel": {
+                "contentId": "djV11Xbc914",
+                "contentType": "LOCKUP_CONTENT_TYPE_VIDEO",
+                "contentImage": {
+                  "thumbnailViewModel": {
+                    "image": {
+                      "sources": [
+                        {
+                          "url": "https://i.ytimg.com/vi/djV11Xbc914/hqdefault.jpg?sqp=-oaymwEiCKgBEF5IWvKriqkDFQgBFQAAAAAYASUAAMhCPQCAokN4AQ==&rs=AOn4CLCT6Sbqj4woUU_HYqm1r_rkLyizOA",
+                          "width": 168,
+                          "height": 94
+                        },
+                        {
+                          "url": "https://i.ytimg.com/vi/djV11Xbc914/hqdefault.jpg?sqp=-oaymwEjCNACELwBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLDjCgpUC_e_8rg9tIrX2mYOtlPqzg",
+                          "width": 336,
+                          "height": 188
+                        }
+                      ]
+                    }
+                  }
+                },
+                "metadata": {
+                  "lockupMetadataViewModel": {
+                    "title": {
+                      "content": "a-ha - Take On Me (Video Oficial)"
+                    },
+                    "metadata": {
+                      "contentMetadataViewModel": {
+                        "metadataRows": [
+                          {
+                            "metadataParts": [
+                              {
+                                "text": {
+                                  "content": "a-ha"
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "metadataParts": [
+                              {
+                                "text": {
+                                  "content": "2438 M de visualizaciones"
+                                }
+                              },
+                              {
+                                "text": {
+                                  "content": "hace 16 años"
+                                }
+                              }
+                            ]
+                          }
+                        ],
+                        "delimiter": " • "
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "reelShelfRenderer": {
+                "title": {
+                  "runs": [
+                    {
+                      "text": "Shorts que te pueden gustar"
+                    }
+                  ]
+                },
+                "items": [],
+                "trackingParams": "unused-reel-shelf-tracking-params"
+              }
+            },
+            {
+              "lockupViewModel": {
+                "contentId": "PL7wgrmb4jq866c26DJkqiO63h_VF5T3Dn",
+                "contentType": "LOCKUP_CONTENT_TYPE_PLAYLIST",
+                "contentImage": {
+                  "collectionThumbnailViewModel": {
+                    "primaryThumbnail": {
+                      "thumbnailViewModel": {
+                        "image": {
+                          "sources": [
+                            {
+                              "url": "https://i.ytimg.com/vi/wyx6JDQCslE/hqdefault.jpg?sqp=-oaymwEWCKgBEF5IWvKriqkDCQgBFQAAiEIYAQ==&rs=AOn4CLBCY84Pd_2a5yf1f_emn9tRzVI1vw",
+                              "width": 336,
+                              "height": 188
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                },
+                "metadata": {
+                  "lockupMetadataViewModel": {
+                    "title": {
+                      "content": "Playlist that must be skipped"
+                    },
+                    "metadata": {
+                      "contentMetadataViewModel": {
+                        "metadataRows": [
+                          {
+                            "metadataParts": [
+                              {
+                                "text": {
+                                  "content": "Some channel"
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "metadataParts": [
+                              {
+                                "text": {
+                                  "content": "27 videos"
+                                }
+                              }
+                            ]
+                          }
+                        ],
+                        "delimiter": " • "
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "lockupViewModel": {
+                "contentId": "tSi6Dn1H36Y",
+                "contentType": "LOCKUP_CONTENT_TYPE_VIDEO",
+                "contentImage": {
+                  "thumbnailViewModel": {
+                    "image": {
+                      "sources": [
+                        {
+                          "url": "https://i.ytimg.com/vi/tSi6Dn1H36Y/hqdefault.jpg",
+                          "width": 168,
+                          "height": 94
+                        }
+                      ]
+                    }
+                  }
+                },
+                "metadata": {
+                  "lockupMetadataViewModel": {
+                    "title": {
+                      "content": "A related video with sparse metadata"
+                    },
+                    "metadata": {
+                      "contentMetadataViewModel": {
+                        "metadataRows": [
+                          {
+                            "metadataParts": [
+                              {
+                                "text": {
+                                  "content": "DJ Nick"
+                                }
+                              }
+                            ]
+                          }
+                        ],
+                        "delimiter": " • "
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "continuationItemRenderer": {
+                "trigger": "CONTINUATION_TRIGGER_ON_ITEM_SHOWN",
+                "continuationEndpoint": {
+                  "commandMetadata": {
+                    "webCommandMetadata": {
+                      "sendPost": true,
+                      "apiUrl": "/youtubei/v1/next"
+                    }
+                  },
+                  "continuationCommand": {
+                    "token": "unused-continuation-token"
+                  }
+                }
+              }
+            }
+          ],
+          "trackingParams": "unused-secondary-results-tracking-params"
+        }
+      }
+    }
+  },
+  "trackingParams": "unused-top-level-tracking-params"
+}

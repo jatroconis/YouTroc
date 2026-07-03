@@ -13,11 +13,6 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import kotlin.coroutines.cancellation.CancellationException
 
 private const val SEARCH_URL = "https://www.youtube.com/youtubei/v1/search?prettyPrint=false"
-private const val CLIENT_NAME = "WEB"
-// Single maintenance knob: refresh when the opt-in live test starts failing
-// (a stale version is masked at runtime by FallbackVideoSearch, see design).
-private const val CLIENT_VERSION = "2.20240814.00.00"
-private const val HL = "es"
 
 private val json = Json { ignoreUnknownKeys = true; explicitNulls = false }
 
@@ -100,9 +95,9 @@ internal fun buildSearchRequest(query: String, regionCode: String?): SearchReque
     SearchRequest(
         context = Context(
             client = Client(
-                clientName = CLIENT_NAME,
-                clientVersion = CLIENT_VERSION,
-                hl = HL,
+                clientName = INNERTUBE_CLIENT_NAME,
+                clientVersion = INNERTUBE_CLIENT_VERSION,
+                hl = INNERTUBE_HL,
                 gl = regionCode?.takeIf { it.isNotBlank() },
             ),
         ),

@@ -1,0 +1,69 @@
+{
+  "responseContext": {
+    "unknownDriftField": "schema-drift-is-tolerated"
+  },
+  "contents": {
+    "twoColumnWatchNextResults": {
+      "results": {
+        "results": {
+          "contents": [
+            {
+              "itemSectionRenderer": {
+                "contents": [
+                  {
+                    "backgroundPromoRenderer": {
+                      "title": {
+                        "runs": [
+                          {
+                            "text": "Este vídeo ya no está disponible"
+                          }
+                        ]
+                      },
+                      "thumbnail": {
+                        "thumbnails": [
+                          {
+                            "url": "https://www.youtube.com/img/desktop/unavailable/unavailable_video.png",
+                            "width": 278,
+                            "height": 161
+                          }
+                        ]
+                      },
+                      "ctaButton": {
+                        "buttonRenderer": {
+                          "style": "STYLE_SUGGESTIVE",
+                          "size": "SIZE_SMALL",
+                          "text": {
+                            "simpleText": "IR A INICIO"
+                          },
+                          "navigationEndpoint": {
+                            "commandMetadata": {
+                              "webCommandMetadata": {
+                                "url": "/",
+                                "webPageType": "WEB_PAGE_TYPE_BROWSE",
+                                "rootVe": 3854,
+                                "apiUrl": "/youtubei/v1/browse"
+                              }
+                            },
+                            "browseEndpoint": {
+                              "browseId": "FEwhat_to_watch"
+                            }
+                          }
+                        }
+                      },
+                      "style": {
+                        "value": "BACKGROUND_PROMO_STYLE_TYPE_FULL_HEIGHT"
+                      }
+                    }
+                  }
+                ],
+                "trackingParams": "CBQQuy8YACITCMX88_2ftZUDFbcF2wEdMG42AA=="
+              }
+            }
+          ],
+          "trackingParams": "CBMQui8iEwjF_PP9n7WVAxW3BdsBHTBuNgA="
+        }
+      }
+    }
+  },
+  "trackingParams": "unused-top-level-tracking-params"
+}
