@@ -1,0 +1,224 @@
+{
+  "responseContext": {
+    "unknownDriftField": "schema-drift-is-tolerated"
+  },
+  "contents": {
+    "twoColumnSearchResultsRenderer": {
+      "primaryContents": {
+        "sectionListRenderer": {
+          "contents": [
+            {
+              "itemSectionRenderer": {
+                "contents": [
+                  {
+                    "videoRenderer": {
+                      "videoId": "kdaoYcf5mXQ",
+                      "title": {
+                        "runs": [
+                          {
+                            "text": "BLESSD ❌ MYKE TOWERS ❌ OVY ON THE DRUMS | TENDENCIA GLOBAL 🌎 ( OFFICIAL VIDEO )"
+                          }
+                        ]
+                      },
+                      "ownerText": {
+                        "runs": [
+                          {
+                            "text": "SIEMPRE BLESSD 💙"
+                          }
+                        ]
+                      },
+                      "viewCountText": {
+                        "simpleText": "200.097.165 visualizaciones",
+                        "runs": null
+                      },
+                      "publishedTimeText": {
+                        "simpleText": "hace 4 años"
+                      },
+                      "thumbnail": {
+                        "thumbnails": [
+                          {
+                            "url": "https://i.ytimg.com/vi/kdaoYcf5mXQ/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLCOiKWxngdqyyrPaIZHCJbFcJsU9g",
+                            "width": 360
+                          },
+                          {
+                            "url": "https://i.ytimg.com/vi/kdaoYcf5mXQ/hq720.jpg?sqp=-oaymwEXCNAFEJQDSFryq4qpAwkIARUAAIhCGAE=&rs=AOn4CLCsMGDTvXK0wAXM-jgeCXgaI28anQ",
+                            "width": 720
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "videoRenderer": {
+                      "videoId": "ugOz3afXXIk",
+                      "title": {
+                        "runs": [
+                          {
+                            "text": "5 Tendencias que arruinan tu imagen (y las 5 compras inteligentes que toda mujer necesita)"
+                          }
+                        ]
+                      },
+                      "ownerText": {
+                        "runs": [
+                          {
+                            "text": "Agus Pedano"
+                          }
+                        ]
+                      },
+                      "viewCountText": {
+                        "simpleText": "24.111 visualizaciones",
+                        "runs": null
+                      },
+                      "publishedTimeText": {
+                        "simpleText": "hace 1 día"
+                      },
+                      "thumbnail": {
+                        "thumbnails": [
+                          {
+                            "url": "https://i.ytimg.com/vi/ugOz3afXXIk/hq720_custom_3.jpg?sqp=CITfndIG-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLCD0yAwqk6H4Ftn-1ODa9rlVyO9Zg",
+                            "width": 360
+                          },
+                          {
+                            "url": "https://i.ytimg.com/vi/ugOz3afXXIk/hq720_custom_3.jpg?sqp=CITfndIG-oaymwEXCNAFEJQDSFryq4qpAwkIARUAAIhCGAE=&rs=AOn4CLCuBcWfcfMlWQjR-pv_zCAMw4EsVw",
+                            "width": 720
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "shelfRenderer": {
+                      "title": {
+                        "simpleText": "Popular en Bogotá"
+                      },
+                      "content": {
+                        "verticalListRenderer": {
+                          "items": [
+                            {
+                              "videoRenderer": {
+                                "videoId": "JAcIoFmaVg0",
+                                "title": {
+                                  "runs": [
+                                    {
+                                      "text": "Tendencias de Moda 2026: Jeans, Blusas, Zapatos y Accesorios Que No Te Puedes Perder"
+                                    }
+                                  ]
+                                },
+                                "ownerText": {
+                                  "runs": [
+                                    {
+                                      "text": "REALMENTE"
+                                    }
+                                  ]
+                                },
+                                "viewCountText": {
+                                  "simpleText": "129.868 visualizaciones",
+                                  "runs": null
+                                },
+                                "publishedTimeText": {
+                                  "simpleText": "hace 3 meses"
+                                },
+                                "thumbnail": {
+                                  "thumbnails": [
+                                    {
+                                      "url": "https://i.ytimg.com/vi/JAcIoFmaVg0/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLAb9c4cqeDDIioEZVrbWpUY1YX3iQ",
+                                      "width": 360
+                                    },
+                                    {
+                                      "url": "https://i.ytimg.com/vi/JAcIoFmaVg0/hq720.jpg?sqp=-oaymwEXCNAFEJQDSFryq4qpAwkIARUAAIhCGAE=&rs=AOn4CLAzJtCThOMkmJ0zdkH4JSVl_dQhew",
+                                      "width": 720
+                                    }
+                                  ]
+                                }
+                              }
+                            },
+                            {
+                              "videoRenderer": {
+                                "videoId": "nedSgeaf0s4",
+                                "title": {
+                                  "runs": [
+                                    {
+                                      "text": "🚨✅MARATÓN🙌TODAS LAS TENDENCIAS DE MODA 2026🧨 RECOPILACIÓN COMPLETA 🛑 VUÉLVETE EXPERTA EN FASHION29🙌✨"
+                                    }
+                                  ]
+                                },
+                                "ownerText": {
+                                  "runs": [
+                                    {
+                                      "text": "Fashion29"
+                                    }
+                                  ]
+                                },
+                                "viewCountText": {
+                                  "simpleText": "36.813 visualizaciones",
+                                  "runs": null
+                                },
+                                "publishedTimeText": {
+                                  "simpleText": "hace 3 meses"
+                                },
+                                "thumbnail": {
+                                  "thumbnails": [
+                                    {
+                                      "url": "https://i.ytimg.com/vi/nedSgeaf0s4/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLCN_TUO_1DAm08CP1tSSEBO0TFZMw",
+                                      "width": 360
+                                    },
+                                    {
+                                      "url": "https://i.ytimg.com/vi/nedSgeaf0s4/hq720.jpg?sqp=-oaymwEXCNAFEJQDSFryq4qpAwkIARUAAIhCGAE=&rs=AOn4CLDMh7FOaom1fzkUUMXl3jBAtTM0jA",
+                                      "width": 720
+                                    }
+                                  ]
+                                }
+                              }
+                            },
+                            {
+                              "videoRenderer": {
+                                "videoId": "oI1OfhVIR-U",
+                                "title": {
+                                  "runs": [
+                                    {
+                                      "text": "Así cambiará la Impresión 3D en 2026 | 4 Tendencias y estrategias CLAVE"
+                                    }
+                                  ]
+                                },
+                                "ownerText": {
+                                  "runs": [
+                                    {
+                                      "text": "GOVAJU 3D"
+                                    }
+                                  ]
+                                },
+                                "viewCountText": {
+                                  "simpleText": "98.050 visualizaciones",
+                                  "runs": null
+                                },
+                                "publishedTimeText": {
+                                  "simpleText": "hace 4 meses"
+                                },
+                                "thumbnail": {
+                                  "thumbnails": [
+                                    {
+                                      "url": "https://i.ytimg.com/vi/oI1OfhVIR-U/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLD2T4c_8Hcv7GA3hc21eBhgw6bZRg",
+                                      "width": 360
+                                    },
+                                    {
+                                      "url": "https://i.ytimg.com/vi/oI1OfhVIR-U/hq720.jpg?sqp=-oaymwEXCNAFEJQDSFryq4qpAwkIARUAAIhCGAE=&rs=AOn4CLB7WWTy76Kq-rQb-pILul0yuK5Jqw",
+                                      "width": 720
+                                    }
+                                  ]
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

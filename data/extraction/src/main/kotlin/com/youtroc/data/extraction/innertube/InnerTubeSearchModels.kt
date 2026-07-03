@@ -80,10 +80,40 @@ internal data class ItemSectionRenderer(
     val contents: List<RenderItem> = emptyList(),
 )
 
-/** A single search result slot: a video, or a non-video renderer we skip (channel/shelf/ad/...). */
+/**
+ * A single search result slot: a video, a shelf (region-anchoring or
+ * channel-promo, see [ShelfRenderer]), or a non-video renderer we skip
+ * (channel/ad/...). [shelfRenderer] is additive/nullable-defaulted so it
+ * stays INERT for the shipped search slice -- [videoRenderers] reads only
+ * [videoRenderer], never this field.
+ */
 @Serializable
 internal data class RenderItem(
     val videoRenderer: VideoRenderer? = null,
+    val shelfRenderer: ShelfRenderer? = null,
+)
+
+/**
+ * A titled group of videos within a search response (e.g. `"Popular en
+ * Bogotá"`, or a channel-promo shelf like `"Lo último de Noticias Caracol"`).
+ * Used by [InnerTubeCatalogMapping] to detect the region-anchoring shelf by
+ * title prefix (ADR-2) -- never consulted by the search slice.
+ */
+@Serializable
+internal data class ShelfRenderer(
+    val title: SimpleText? = null,
+    val content: ShelfContent? = null,
+)
+
+@Serializable
+internal data class ShelfContent(
+    val verticalListRenderer: VerticalListRenderer? = null,
+)
+
+@Serializable
+internal data class VerticalListRenderer(
+    /** Items reuse [RenderItem]/[VideoRenderer] unchanged -- every child observed is a `videoRenderer`. */
+    val items: List<RenderItem> = emptyList(),
 )
 
 @Serializable

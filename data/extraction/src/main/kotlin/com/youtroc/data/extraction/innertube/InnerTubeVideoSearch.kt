@@ -12,9 +12,11 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import kotlin.coroutines.cancellation.CancellationException
 
-private const val SEARCH_URL = "https://www.youtube.com/youtubei/v1/search?prettyPrint=false"
+/** Promoted to `internal` (was `private`) so [InnerTubeVideoCatalog] reuses it verbatim -- ADR-6. */
+internal const val INNERTUBE_SEARCH_URL = "https://www.youtube.com/youtubei/v1/search?prettyPrint=false"
 
-private val json = Json { ignoreUnknownKeys = true; explicitNulls = false }
+/** Promoted to `internal` (was `private`) so [InnerTubeVideoCatalog] reuses it verbatim -- ADR-6. */
+internal val innerTubeSearchJson = Json { ignoreUnknownKeys = true; explicitNulls = false }
 
 /**
  * Shared [OkHttpClient] for [InnerTubeVideoSearch] instances: a single
@@ -50,13 +52,13 @@ class InnerTubeVideoSearch(
         // (WU-2). This short-circuits before touching the network.
         if (query.isBlank()) return@withContext SearchResult.Empty
         try {
-            val request = buildRequest(query, regionCode)
+            val request = buildSearchHttpRequest(query, regionCode)
             client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
                     error("InnerTube search returned HTTP ${response.code}")
                 }
                 val body = response.body?.string().orEmpty()
-                val parsed = json.decodeFromString<SearchResponse>(body)
+                val parsed = innerTubeSearchJson.decodeFromString<SearchResponse>(body)
                 val videos = parsed.videoRenderers().mapNotNull { it.toVideoOrNull() }
                 if (videos.isEmpty()) SearchResult.Empty else SearchResult.Success(videos)
             }
@@ -71,13 +73,16 @@ class InnerTubeVideoSearch(
 /**
  * Builds the InnerTube search POST request from [buildSearchRequest]'s pure
  * DTO -- the only I/O-touching step is `OkHttpClient.newCall(...).execute()`
- * in [InnerTubeVideoSearch.search], never this function.
+ * in [InnerTubeVideoSearch.search], never this function. Promoted to
+ * `internal` (was `private fun buildRequest`) so [InnerTubeVideoCatalog]
+ * reuses it verbatim -- ADR-6. No new headers: only `Content-Type` is set,
+ * matching the design-gate-confirmed real request shape.
  */
-private fun buildRequest(query: String, regionCode: String?): Request {
+internal fun buildSearchHttpRequest(query: String, regionCode: String?): Request {
     val payload = buildSearchRequest(query, regionCode)
-    val body = json.encodeToString(payload).toRequestBody("application/json".toMediaType())
+    val body = innerTubeSearchJson.encodeToString(payload).toRequestBody("application/json".toMediaType())
     return Request.Builder()
-        .url(SEARCH_URL)
+        .url(INNERTUBE_SEARCH_URL)
         .post(body)
         .build()
 }

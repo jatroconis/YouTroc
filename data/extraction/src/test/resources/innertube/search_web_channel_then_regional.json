@@ -1,0 +1,237 @@
+{
+  "responseContext": {
+    "unknownDriftField": "schema-drift-is-tolerated"
+  },
+  "contents": {
+    "twoColumnSearchResultsRenderer": {
+      "primaryContents": {
+        "sectionListRenderer": {
+          "contents": [
+            {
+              "itemSectionRenderer": {
+                "contents": [
+                  {
+                    "videoRenderer": {
+                      "videoId": "seIFElq6qnE",
+                      "title": {
+                        "runs": [
+                          {
+                            "text": "🔴 DW Noticias 2 de julio: Rescatan con vida a un hombre que llevaba ocho días bajo los escombros"
+                          }
+                        ]
+                      },
+                      "ownerText": {
+                        "runs": [
+                          {
+                            "text": "DW Español"
+                          }
+                        ]
+                      },
+                      "viewCountText": {
+                        "simpleText": "67.725 visualizaciones",
+                        "runs": null
+                      },
+                      "publishedTimeText": {
+                        "simpleText": "hace 9 horas"
+                      },
+                      "thumbnail": {
+                        "thumbnails": [
+                          {
+                            "url": "https://i.ytimg.com/vi/seIFElq6qnE/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLAoeTOfyzMyylNSY0FOMgxpjztZNA",
+                            "width": 360
+                          },
+                          {
+                            "url": "https://i.ytimg.com/vi/seIFElq6qnE/hq720.jpg?sqp=-oaymwEXCNAFEJQDSFryq4qpAwkIARUAAIhCGAE=&rs=AOn4CLDOb2ywCjyZFp0eCSYfhCCqiPIV0Q",
+                            "width": 720
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "shelfRenderer": {
+                      "title": {
+                        "simpleText": "Lo último de Noticias Caracol"
+                      },
+                      "content": {
+                        "verticalListRenderer": {
+                          "items": [
+                            {
+                              "videoRenderer": {
+                                "videoId": "xriyQQnxQNA",
+                                "title": {
+                                  "runs": [
+                                    {
+                                      "text": "¿Cómo inició el empalme entre los gobiernos Petro y De la Espriella y qué viene en el proceso?"
+                                    }
+                                  ]
+                                },
+                                "ownerText": {
+                                  "runs": [
+                                    {
+                                      "text": "Noticias Caracol"
+                                    }
+                                  ]
+                                },
+                                "viewCountText": {
+                                  "simpleText": "1547 visualizaciones",
+                                  "runs": null
+                                },
+                                "publishedTimeText": {
+                                  "simpleText": "hace 3 horas"
+                                },
+                                "thumbnail": {
+                                  "thumbnails": [
+                                    {
+                                      "url": "https://i.ytimg.com/vi/xriyQQnxQNA/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLBhXy_A03bT6joKumKWGOvj0_4nLw",
+                                      "width": 360
+                                    },
+                                    {
+                                      "url": "https://i.ytimg.com/vi/xriyQQnxQNA/hq720.jpg?sqp=-oaymwEXCNAFEJQDSFryq4qpAwkIARUAAIhCGAE=&rs=AOn4CLBDjtWurp9lGasBCmgsr5n3AX-Q8A",
+                                      "width": 720
+                                    }
+                                  ]
+                                }
+                              }
+                            },
+                            {
+                              "videoRenderer": {
+                                "videoId": "T1jc3X7rMPQ",
+                                "title": {
+                                  "runs": [
+                                    {
+                                      "text": "Habla rescatista del vigilante que permaneció 9 días bajo escombros tras terremotos en Venezuela"
+                                    }
+                                  ]
+                                },
+                                "ownerText": {
+                                  "runs": [
+                                    {
+                                      "text": "Noticias Caracol"
+                                    }
+                                  ]
+                                },
+                                "viewCountText": {
+                                  "simpleText": "9437 visualizaciones",
+                                  "runs": null
+                                },
+                                "publishedTimeText": {
+                                  "simpleText": "hace 4 horas"
+                                },
+                                "thumbnail": {
+                                  "thumbnails": [
+                                    {
+                                      "url": "https://i.ytimg.com/vi/T1jc3X7rMPQ/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLArOlj-HovQ4L3vvmT4YhZ_dAJAow",
+                                      "width": 360
+                                    },
+                                    {
+                                      "url": "https://i.ytimg.com/vi/T1jc3X7rMPQ/hq720.jpg?sqp=-oaymwEXCNAFEJQDSFryq4qpAwkIARUAAIhCGAE=&rs=AOn4CLAnSsdlIlORG-q_P3gmizLTLRxMjA",
+                                      "width": 720
+                                    }
+                                  ]
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "shelfRenderer": {
+                      "title": {
+                        "simpleText": "Popular en Bogotá"
+                      },
+                      "content": {
+                        "verticalListRenderer": {
+                          "items": [
+                            {
+                              "videoRenderer": {
+                                "videoId": "TSAXSpy4ujM",
+                                "title": {
+                                  "runs": [
+                                    {
+                                      "text": "¡URGENTE! ¡MUY GRAVE! PRESIDENTE ABELARDO DA PRIMEROS INFORMES DE PETRO!#colombia #noticias #petro"
+                                    }
+                                  ]
+                                },
+                                "ownerText": {
+                                  "runs": [
+                                    {
+                                      "text": "Luz Social"
+                                    }
+                                  ]
+                                },
+                                "viewCountText": {
+                                  "simpleText": "28.750 visualizaciones",
+                                  "runs": null
+                                },
+                                "publishedTimeText": {
+                                  "simpleText": "hace 2 días"
+                                },
+                                "thumbnail": {
+                                  "thumbnails": [
+                                    {
+                                      "url": "https://i.ytimg.com/vi/TSAXSpy4ujM/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLBebTyKsPdzV_J7JYFOnsN8Ieo4YQ",
+                                      "width": 360
+                                    },
+                                    {
+                                      "url": "https://i.ytimg.com/vi/TSAXSpy4ujM/hq720.jpg?sqp=-oaymwEXCNAFEJQDSFryq4qpAwkIARUAAIhCGAE=&rs=AOn4CLDxERDAp9FQV1cl0-iRoZQze0B-9A",
+                                      "width": 720
+                                    }
+                                  ]
+                                }
+                              }
+                            },
+                            {
+                              "videoRenderer": {
+                                "videoId": "Caeq0CL1wis",
+                                "title": {
+                                  "runs": [
+                                    {
+                                      "text": "Petro TENÍA RAZÓN Y LE LLEGA NOTICIA: Abelardo DESCUBRIÓ LO QUE LE ESPERA -Mr. Carvajalino"
+                                    }
+                                  ]
+                                },
+                                "ownerText": {
+                                  "runs": [
+                                    {
+                                      "text": "Mr. Carvajalino"
+                                    }
+                                  ]
+                                },
+                                "viewCountText": {
+                                  "simpleText": "185.122 visualizaciones",
+                                  "runs": null
+                                },
+                                "publishedTimeText": {
+                                  "simpleText": "hace 10 días"
+                                },
+                                "thumbnail": {
+                                  "thumbnails": [
+                                    {
+                                      "url": "https://i.ytimg.com/vi/Caeq0CL1wis/hq720.jpg?sqp=-oaymwEjCOgCEMoBSFryq4qpAxUIARUAAAAAGAElAADIQj0AgKJDeAE=&rs=AOn4CLBCmOdJzUrczso15cUT1AbT-J3Gaw",
+                                      "width": 360
+                                    },
+                                    {
+                                      "url": "https://i.ytimg.com/vi/Caeq0CL1wis/hq720.jpg?sqp=-oaymwEXCNAFEJQDSFryq4qpAwkIARUAAIhCGAE=&rs=AOn4CLDBJ1--TXjLXq7mDtQgg2qC4DPlVw",
+                                      "width": 720
+                                    }
+                                  ]
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}
