@@ -11,6 +11,8 @@ data class Stream(
     val heightPx: Int? = null,
     /** Bitrate in bits per second, when known. */
     val bitrateBps: Int? = null,
+    /** HDR intent (SDR/HDR10/HLG), when known. Defaults to SDR -- absent signal is safe. */
+    val hdr: HdrFormat = HdrFormat.SDR,
 ) {
     init {
         require(url.isNotBlank()) { "Stream url must not be blank." }

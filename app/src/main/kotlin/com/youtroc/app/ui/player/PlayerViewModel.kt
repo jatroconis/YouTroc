@@ -47,7 +47,11 @@ class PlayerViewModel(
                     val manifest = result.streams.manifest
                     // A null manifest means the selection policy couldn't assemble any
                     // valid delivery (no DASH/MUXED, and no video+audio pair to merge).
-                    if (manifest != null) PlayerUiState.Ready(manifest, title) else PlayerUiState.NotAvailable
+                    if (manifest != null) {
+                        PlayerUiState.Ready(manifest, title, result.streams.hdr)
+                    } else {
+                        PlayerUiState.NotAvailable
+                    }
                 }
 
                 StreamResult.NotAvailable -> PlayerUiState.NotAvailable

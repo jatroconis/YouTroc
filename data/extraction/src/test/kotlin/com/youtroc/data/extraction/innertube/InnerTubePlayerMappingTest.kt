@@ -1,5 +1,6 @@
 package com.youtroc.data.extraction.innertube
 
+import com.youtroc.core.domain.stream.HdrFormat
 import com.youtroc.core.domain.stream.StreamKind
 import com.youtroc.core.domain.stream.StreamResult
 import com.youtroc.core.domain.stream.VideoCodec
@@ -8,6 +9,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 private val lenientJson = Json { ignoreUnknownKeys = true; explicitNulls = false }
@@ -177,5 +179,99 @@ class InnerTubePlayerMappingTest {
         val result = unavailable.toStreamResult()
 
         assertEquals(StreamResult.NotAvailable, result)
+    }
+
+    // ---- HDR: colorInfo deserialization (REQ-H1) + toHdrFormat() mapping (REQ-H2) ----
+    // Inline JSON literals, not the shared player_android_vr.json fixture -- that real
+    // capture (dQw4w9WgXcQ) is an SDR video and carries no colorInfo at all.
+
+    @Test
+    fun `colorInfo with SMPTEST2084 transfer characteristics round-trips through the DTO`() {
+        val json = """
+            {"itag":313,"colorInfo":{"primaries":"COLOR_PRIMARIES_BT2020","transferCharacteristics":"COLOR_TRANSFER_CHARACTERISTICS_SMPTEST2084","matrixCoefficients":"COLOR_MATRIX_COEFFICIENTS_BT2020_NCL"}}
+        """.trimIndent()
+
+        val format: PlayerFormat = lenientJson.decodeFromString(json)
+
+        assertNotNull(format.colorInfo)
+        assertEquals("COLOR_PRIMARIES_BT2020", format.colorInfo?.primaries)
+        assertEquals("COLOR_TRANSFER_CHARACTERISTICS_SMPTEST2084", format.colorInfo?.transferCharacteristics)
+        assertEquals("COLOR_MATRIX_COEFFICIENTS_BT2020_NCL", format.colorInfo?.matrixCoefficients)
+    }
+
+    @Test
+    fun `colorInfo with ARIB_STD_B67 transfer characteristics round-trips through the DTO`() {
+        val json = """
+            {"itag":313,"colorInfo":{"primaries":"COLOR_PRIMARIES_BT2020","transferCharacteristics":"COLOR_TRANSFER_CHARACTERISTICS_ARIB_STD_B67"}}
+        """.trimIndent()
+
+        val format: PlayerFormat = lenientJson.decodeFromString(json)
+
+        assertNotNull(format.colorInfo)
+        assertEquals("COLOR_TRANSFER_CHARACTERISTICS_ARIB_STD_B67", format.colorInfo?.transferCharacteristics)
+    }
+
+    @Test
+    fun `omitted colorInfo decodes to null, never fabricated`() {
+        val json = """{"itag":18}"""
+
+        val format: PlayerFormat = lenientJson.decodeFromString(json)
+
+        assertNull(format.colorInfo)
+    }
+
+    @Test
+    fun `toHdrFormat maps a SMPTEST2084 transfer characteristic to HDR10`() {
+        val colorInfo = ColorInfo(transferCharacteristics = "COLOR_TRANSFER_CHARACTERISTICS_SMPTEST2084")
+
+        assertEquals(HdrFormat.HDR10, colorInfo.toHdrFormat())
+    }
+
+    @Test
+    fun `toHdrFormat maps an ARIB_STD_B67 transfer characteristic to HLG`() {
+        val colorInfo = ColorInfo(transferCharacteristics = "COLOR_TRANSFER_CHARACTERISTICS_ARIB_STD_B67")
+
+        assertEquals(HdrFormat.HLG, colorInfo.toHdrFormat())
+    }
+
+    @Test
+    fun `toHdrFormat maps a null colorInfo to SDR`() {
+        val colorInfo: ColorInfo? = null
+
+        assertEquals(HdrFormat.SDR, colorInfo.toHdrFormat())
+    }
+
+    @Test
+    fun `toHdrFormat maps an unknown or BT709 transfer characteristic to SDR, never throws`() {
+        val bt709 = ColorInfo(transferCharacteristics = "COLOR_TRANSFER_CHARACTERISTICS_BT709")
+        val garbage = ColorInfo(transferCharacteristics = "not-a-real-value")
+
+        assertEquals(HdrFormat.SDR, bt709.toHdrFormat())
+        assertEquals(HdrFormat.SDR, garbage.toHdrFormat())
+    }
+
+    @Test
+    fun `HDR10 colorInfo maps through toDomainStreamOrNull into Stream hdr`() {
+        val json = """
+            {"itag":313,"url":"https://cdn/hdr","mimeType":"video/webm; codecs=\"vp09.02.51.10\"","bitrate":18076636,
+             "colorInfo":{"primaries":"COLOR_PRIMARIES_BT2020","transferCharacteristics":"COLOR_TRANSFER_CHARACTERISTICS_SMPTEST2084"}}
+        """.trimIndent()
+        val format: PlayerFormat = lenientJson.decodeFromString(json)
+
+        val stream = format.toDomainStreamOrNull(StreamKind.VIDEO_ONLY)
+
+        assertNotNull(stream)
+        assertEquals(HdrFormat.HDR10, stream?.hdr)
+    }
+
+    @Test
+    fun `SDR format with no colorInfo maps through toDomainStreamOrNull into Stream hdr SDR`() {
+        val json = """{"itag":18,"url":"https://cdn/sdr","mimeType":"video/mp4; codecs=\"avc1.42001E\"","bitrate":500000}"""
+        val format: PlayerFormat = lenientJson.decodeFromString(json)
+
+        val stream = format.toDomainStreamOrNull(StreamKind.MUXED)
+
+        assertNotNull(stream)
+        assertEquals(HdrFormat.SDR, stream?.hdr)
     }
 }

@@ -74,6 +74,7 @@ fun PlayerScreen(
                 videoId = videoId,
                 manifest = state.manifest,
                 title = state.title,
+                hdr = state.hdr,
                 onUpNextClick = onUpNextClick,
             )
 

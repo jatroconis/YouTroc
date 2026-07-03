@@ -1,6 +1,7 @@
 package com.youtroc.data.extraction.innertube
 
 import com.youtroc.core.domain.playback.PlaybackManifest
+import com.youtroc.core.domain.stream.HdrFormat
 import com.youtroc.core.domain.stream.PlayableStreams
 import com.youtroc.core.domain.stream.Stream
 import com.youtroc.core.domain.stream.StreamKind
@@ -78,13 +79,27 @@ internal fun Fmt.toDomainStream(kind: StreamKind): Stream =
     )
 
 /**
+ * Maps android_vr's `colorInfo.transferCharacteristics` onto the domain's
+ * [HdrFormat] (REQ-H2). `endsWith` rather than exact match: YouTube's wire
+ * strings are namespaced (e.g. `COLOR_TRANSFER_CHARACTERISTICS_SMPTEST2084`),
+ * so this tolerates any prefix. Total function -- null, unknown, or garbage
+ * input (BT709, missing colorInfo, malformed string) always falls through to
+ * [HdrFormat.SDR], never throws.
+ */
+internal fun ColorInfo?.toHdrFormat(): HdrFormat = when {
+    this?.transferCharacteristics?.endsWith("SMPTEST2084") == true -> HdrFormat.HDR10
+    this?.transferCharacteristics?.endsWith("ARIB_STD_B67") == true -> HdrFormat.HLG
+    else -> HdrFormat.SDR
+}
+
+/**
  * Maps a raw `formats[]`/`adaptiveFormats[]` entry directly onto the domain
  * [Stream] -- unlike [toFmtOrNull], this does NOT require `initRange`/
  * `indexRange` (the muxed `formats[]` entries never carry them, since they
  * are plain progressive URLs, not DASH-segmented). Used to build
  * [PlayableStreams.streams] for every [StreamKind], including [StreamKind.MUXED].
  */
-private fun PlayerFormat.toDomainStreamOrNull(kind: StreamKind): Stream? {
+internal fun PlayerFormat.toDomainStreamOrNull(kind: StreamKind): Stream? {
     val streamUrl = url?.takeIf { it.isNotBlank() } ?: return null
     val mime = mimeType ?: return null
     val type = mime.substringBefore(';').trim()
@@ -97,6 +112,7 @@ private fun PlayerFormat.toDomainStreamOrNull(kind: StreamKind): Stream? {
         codec = codecs?.let { toDomainVideoCodec(it) },
         heightPx = height,
         bitrateBps = bitrate ?: averageBitrate,
+        hdr = colorInfo.toHdrFormat(),
     )
 }
 

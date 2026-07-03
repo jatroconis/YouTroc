@@ -16,6 +16,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.youtroc.app.YouTrocApp
 import com.youtroc.core.domain.playback.PlaybackManifest
+import com.youtroc.core.domain.stream.HdrFormat
 import com.youtroc.core.domain.video.VideoId
 import com.youtroc.core.ui.component.VideoCardUi
 import com.youtroc.data.persistence.DataStoreWatchProgressStore
@@ -56,8 +57,11 @@ fun PlaybackRoute(
     videoId: String,
     manifest: PlaybackManifest,
     title: String,
+    hdr: HdrFormat,
     onUpNextClick: (VideoCardUi) -> Unit = {},
 ) {
+    HdrDisplayController(hdr)
+
     val context = LocalContext.current
     val appScope = remember { (context.applicationContext as YouTrocApp).applicationScope }
     val watchProgressStore = remember { DataStoreWatchProgressStore(context) }

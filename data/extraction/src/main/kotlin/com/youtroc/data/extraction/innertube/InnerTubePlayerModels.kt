@@ -72,6 +72,20 @@ internal data class PlayerFormat(
     val indexRange: Range? = null,
     val audioSampleRate: String? = null,
     val audioChannels: Int? = null,
+    val colorInfo: ColorInfo? = null,
+)
+
+/**
+ * HDR/color signal for one [PlayerFormat], when the wire sends it (android_vr
+ * omits it entirely for SDR sources -- `ignoreUnknownKeys` used to silently
+ * drop it before this field existed, REQ-H1). Maps to a domain
+ * [com.youtroc.core.domain.stream.HdrFormat] via [toHdrFormat].
+ */
+@Serializable
+internal data class ColorInfo(
+    val primaries: String? = null,
+    val transferCharacteristics: String? = null,
+    val matrixCoefficients: String? = null,
 )
 
 /** A byte range; `start`/`end` are JSON strings (R2), not numbers. */

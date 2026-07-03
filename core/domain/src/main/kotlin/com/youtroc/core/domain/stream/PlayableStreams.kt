@@ -21,4 +21,13 @@ data class PlayableStreams(
             "PlayableStreams needs at least one stream, unless it carries a live manifest."
         }
     }
+
+    /**
+     * The aggregate HDR intent across [streams]: the first HDR stream's
+     * format, or [HdrFormat.SDR] when none is HDR (or [streams] is empty,
+     * the live-manifest case). Empty-safe by construction -- NEVER
+     * `maxOf`/`maxWith`, which throws on an empty list and would otherwise
+     * compare [HdrFormat] by meaningless enum ordinal.
+     */
+    val hdr: HdrFormat get() = streams.firstOrNull { it.hdr.isHdr }?.hdr ?: HdrFormat.SDR
 }

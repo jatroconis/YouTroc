@@ -4,6 +4,7 @@ import com.youtroc.core.domain.playback.LivePlaybackSelectionPolicy
 import com.youtroc.core.domain.playback.ManifestInputs
 import com.youtroc.core.domain.playback.PlaybackManifest
 import com.youtroc.core.domain.playback.PlaybackSelectionPolicy
+import com.youtroc.core.domain.stream.HdrFormat
 import com.youtroc.core.domain.stream.PlayableStreams
 import com.youtroc.core.domain.stream.Stream
 import com.youtroc.core.domain.stream.StreamKind
@@ -104,7 +105,7 @@ class NewPipeStreamProvider(
         return PlaybackSelectionPolicy.select(inputs)
     }
 
-    private fun NewPipeStream.toDomainOrNull(kind: StreamKind): Stream? {
+    internal fun NewPipeStream.toDomainOrNull(kind: StreamKind): Stream? {
         // getContent() is the URL for progressive streams or an inline manifest for DASH/HLS.
         val content = this.content
         if (content.isNullOrBlank()) return null
@@ -115,6 +116,7 @@ class NewPipeStreamProvider(
             codec = codecOrNull(),
             heightPx = heightOrNull(),
             bitrateBps = bitrateOrNull(),
+            hdr = hdr(),
         )
     }
 
@@ -129,6 +131,20 @@ class NewPipeStreamProvider(
         is AudioStream -> bitrate.takeIf { it > 0 }
         else -> null
     }
+
+    /**
+     * T10 (apply-time investigation, per design/tasks): NewPipeExtractor
+     * v0.26.3's [VideoStream]/[NewPipeStream]/[ItagItem] were decompiled via
+     * `javap` and a full `strings` scan of the jar was run for "HDR" -- NONE
+     * of those classes expose a color/transfer-characteristics/HDR accessor,
+     * and the string "HDR" does not appear anywhere in the jar (not even in
+     * quality-label text). This version has no HDR signal to map, so this
+     * always returns [HdrFormat.SDR] -- explicit and safe (REQ-H2's NewPipe
+     * scenario: never silently dropped, never a stale non-default value). If
+     * a future NewPipeExtractor upgrade adds a color accessor, this is the
+     * one place to wire it.
+     */
+    private fun NewPipeStream.hdr(): HdrFormat = HdrFormat.SDR
 
     private fun watchUrl(videoId: VideoId): String =
         "https://www.youtube.com/watch?v=${videoId.value}"
