@@ -63,7 +63,7 @@ class PlayerViewModel(
         /**
          * Composition root for extraction: builds [GetPlayableStreams] over
          * the port-typed [streamProvider] the caller passes in -- the
-         * concrete `PrefetchingStreamProvider`/`FallbackStreamProvider`
+         * concrete `PrefetchingStreamProvider`/`LadderStreamProvider`
          * composition lives ONLY in `YouTrocApp.streamProvider` (design D1),
          * so this factory no longer constructs a fresh adapter chain per
          * player entry. Cache-transparent: [GetPlayableStreams] sees only

@@ -55,4 +55,39 @@ class InnerTubePlayerRequestTest {
 
         assertEquals("dQw4w9WgXcQ", decoded.videoId)
     }
+
+    @Test
+    fun `the default 2-arg call and an explicit ANDROID_VR context produce byte-identical requests (regression guard)`() {
+        val default = buildPlayerRequest("dQw4w9WgXcQ", regionCode = "AR")
+        val explicit = buildPlayerRequest("dQw4w9WgXcQ", regionCode = "AR", context = PlayerClientContext.ANDROID_VR)
+
+        assertEquals(Json.encodeToString(default), Json.encodeToString(explicit))
+    }
+
+    @Test
+    fun `builds an IOS client request with the spike-confirmed device identity`() {
+        val request = buildPlayerRequest("dQw4w9WgXcQ", regionCode = null, context = PlayerClientContext.IOS)
+
+        assertEquals("IOS", request.context.client.clientName)
+        assertEquals("21.02.3", request.context.client.clientVersion)
+        assertEquals("Apple", request.context.client.deviceMake)
+        assertEquals("iPhone16,2", request.context.client.deviceModel)
+        assertNull(request.context.client.androidSdkVersion)
+        assertEquals("es", request.context.client.hl)
+        assertEquals("dQw4w9WgXcQ", request.videoId)
+    }
+
+    @Test
+    fun `buildRequest attaches a User-Agent header for the ios context`() {
+        val request = buildRequest("dQw4w9WgXcQ", regionCode = null, context = PlayerClientContext.IOS)
+
+        assertEquals(IOS_USER_AGENT, request.header("User-Agent"))
+    }
+
+    @Test
+    fun `buildRequest attaches no User-Agent header for the default android_vr context`() {
+        val request = buildRequest("dQw4w9WgXcQ", regionCode = null)
+
+        assertNull(request.header("User-Agent"))
+    }
 }

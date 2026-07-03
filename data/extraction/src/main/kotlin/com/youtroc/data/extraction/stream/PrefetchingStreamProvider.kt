@@ -16,7 +16,7 @@ import kotlin.coroutines.coroutineContext
 
 /**
  * Caching decorator over [delegate] (a [StreamProvider], concretely the
- * composed [FallbackStreamProvider]) that speculatively prefetches the next
+ * composed [LadderStreamProvider]) that speculatively prefetches the next
  * up-next video's streams while the current one plays. The read path
  * ([playableStreams]) is cache-transparent -- [com.youtroc.core.domain.playback.GetPlayableStreams]
  * and every other domain consumer see zero difference. [prefetch]/

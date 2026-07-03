@@ -20,8 +20,8 @@ import kotlin.test.assertTrue
  * Opt-in only (set YOUTROC_LIVE=1). Mirrors
  * [InnerTubeVideoDetailLiveTest]/[InnerTubeVideoSearchLiveTest]: the default
  * build stays deterministic, and when this fails at runtime
- * [com.youtroc.data.extraction.stream.FallbackStreamProvider] already masks
- * it by falling back to NewPipe.
+ * [com.youtroc.data.extraction.stream.LadderStreamProvider] already masks it
+ * by falling through to the ios rung, then NewPipe.
  *
  * What this test does NOT prove: whether the OWN-BUILT DASH manifest itself
  * parses and plays in Media3/ExoPlayer -- that is
@@ -33,7 +33,7 @@ class InnerTubeStreamProviderLiveTest {
 
     @Test
     fun `resolves real playable stream bytes from YouTube's android_vr player endpoint`() = runTest {
-        val provider = InnerTubeStreamProvider()
+        val provider = InnerTubeStreamProvider.androidVr()
 
         val result = provider.playableStreams(VideoId("dQw4w9WgXcQ"))
 

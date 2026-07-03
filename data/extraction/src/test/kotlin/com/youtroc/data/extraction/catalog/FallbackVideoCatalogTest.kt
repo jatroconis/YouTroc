@@ -13,7 +13,7 @@ import kotlin.test.assertTrue
 
 /**
  * Deterministic, network-free verification of the own-first decorator
- * policy. Mirrors [com.youtroc.data.extraction.stream.FallbackStreamProvider]
+ * policy. Mirrors [com.youtroc.data.extraction.stream.LadderStreamProvider]
  * (Success-ONLY pass-through) rather than
  * [com.youtroc.data.extraction.search.FallbackVideoSearch] (which trusts
  * Empty too): a blank Home is a bad terminal UX, so own's

@@ -106,7 +106,7 @@ fun PlaybackRoute(
         val next = nextUpNextId
         if (stablePlay && next != null && next != videoId) { // C3: never prefetch the current video itself
             val src = runCatching { streamProvider.lastSourceFor(VideoId(videoId)) }.getOrNull()
-            if (src == StreamSource.OWN) { // C1: POSITIVE gate -- null/FALLBACK/unknown ALL skip
+            if (src == StreamSource.ANDROID_VR) { // C1: POSITIVE gate -- null/IOS/FALLBACK ALL skip
                 runCatching { VideoId(next) }.getOrNull()?.let(streamProvider::prefetch)
             }
         }

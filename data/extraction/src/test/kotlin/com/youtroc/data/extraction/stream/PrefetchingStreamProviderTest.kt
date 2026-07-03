@@ -19,13 +19,13 @@ import kotlin.test.assertNull
  * Deterministic, network-free verification of [PrefetchingStreamProvider]'s
  * concurrency core (Mutex-guarded 1-entry cache, ≤1 in-flight job,
  * cancel-on-change, Success-only caching, id-guarded [PrefetchingStreamProvider.lastSourceFor]).
- * Mirrors [FallbackStreamProviderTest]'s fakes-only, `runTest`/`TestScope`
+ * Mirrors [LadderStreamProviderTest]'s fakes-only, `runTest`/`TestScope`
  * style, plus an injected [PrefetchingStreamProvider] `now` clock so
  * staleness is deterministic (no real time dependency; `:core:domain` stays
  * pure per D4 -- `now` lives here in `:data:extraction`).
  *
  * [FakeStreamProvider] is a NESTED private class (not top-level) so its JVM
- * class name doesn't collide with [FallbackStreamProviderTest]'s own
+ * class name doesn't collide with [LadderStreamProviderTest]'s own
  * file-private `FakeStreamProvider` in the same package.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -328,7 +328,7 @@ class PrefetchingStreamProviderTest {
         val fake = FakeStreamProvider()
         val provider = PrefetchingStreamProvider(delegate = fake, scope = this, now = { 0L })
 
-        provider.recordSource(videoIdA, StreamSource.OWN)
+        provider.recordSource(videoIdA, StreamSource.ANDROID_VR)
 
         assertNull(provider.lastSourceFor(videoIdB))
     }
@@ -346,8 +346,18 @@ class PrefetchingStreamProviderTest {
         val fake = FakeStreamProvider()
         val provider = PrefetchingStreamProvider(delegate = fake, scope = this, now = { 0L })
 
-        provider.recordSource(videoIdA, StreamSource.OWN)
+        provider.recordSource(videoIdA, StreamSource.ANDROID_VR)
 
-        assertEquals(StreamSource.OWN, provider.lastSourceFor(videoIdA))
+        assertEquals(StreamSource.ANDROID_VR, provider.lastSourceFor(videoIdA))
+    }
+
+    @Test
+    fun `lastSourceFor returns IOS when IOS was the recorded source (3-valued signal)`() = runTest {
+        val fake = FakeStreamProvider()
+        val provider = PrefetchingStreamProvider(delegate = fake, scope = this, now = { 0L })
+
+        provider.recordSource(videoIdA, StreamSource.IOS)
+
+        assertEquals(StreamSource.IOS, provider.lastSourceFor(videoIdA))
     }
 }

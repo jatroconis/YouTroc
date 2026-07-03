@@ -14,7 +14,7 @@ import com.youtroc.core.domain.catalog.VideoCatalog
  * DELIBERATE divergence from
  * [com.youtroc.data.extraction.search.FallbackVideoSearch] (which passes
  * [CatalogResult]-analogous `Empty` through as a trusted own answer) --
- * MIRRORS [com.youtroc.data.extraction.stream.FallbackStreamProvider]
+ * MIRRORS [com.youtroc.data.extraction.stream.LadderStreamProvider]
  * instead: own's [CatalogResult.Empty] is NOT authoritative here. A blank
  * Home is a bad terminal UX, so every non-[CatalogResult.Success] outcome
  * from [primary] gives [fallback] a chance to fill the feed.

@@ -9,8 +9,10 @@ import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.crossfade
 import com.youtroc.data.extraction.NewPipeStreamProvider
 import com.youtroc.data.extraction.innertube.InnerTubeStreamProvider
-import com.youtroc.data.extraction.stream.FallbackStreamProvider
+import com.youtroc.data.extraction.stream.LadderStreamProvider
 import com.youtroc.data.extraction.stream.PrefetchingStreamProvider
+import com.youtroc.data.extraction.stream.StreamRung
+import com.youtroc.data.extraction.stream.StreamSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -36,19 +38,27 @@ class YouTrocApp : Application(), SingletonImageLoader.Factory {
     /**
      * Speculative-prefetch caching decorator (design D1), same
      * cross-nav-entry lifetime idiom as [applicationScope]. The delegate
-     * [FallbackStreamProvider]/decorator pair is circular (the delegate's
+     * [LadderStreamProvider]/decorator pair is circular (the delegate's
      * `onResolved` callback needs the decorator; the decorator wraps the
      * delegate) — broken by a DEFERRED-capture lambda: the delegate is built
      * first with a lambda that only dereferences the `lateinit var` when a
      * resolution actually fires (always after assignment below). Binding
      * `decorator::recordSource` eagerly here would throw
      * `UninitializedPropertyAccessException` at construction.
+     *
+     * 3-rung ladder (stream-client-ladder): android_vr (primary) -> ios
+     * (own fallback rung) -> NewPipe (terminal safety net). android_vr is
+     * ALWAYS attempted first and stays byte-identical to the shipped
+     * request; ios is reachable only when android_vr did not succeed.
      */
     val streamProvider: PrefetchingStreamProvider by lazy {
         lateinit var decorator: PrefetchingStreamProvider
-        val delegate = FallbackStreamProvider(
-            primary = InnerTubeStreamProvider(),
-            fallback = NewPipeStreamProvider(),
+        val delegate = LadderStreamProvider(
+            rungs = listOf(
+                StreamRung(StreamSource.ANDROID_VR, InnerTubeStreamProvider.androidVr()),
+                StreamRung(StreamSource.IOS, InnerTubeStreamProvider.ios()),
+                StreamRung(StreamSource.FALLBACK, NewPipeStreamProvider()),
+            ),
             onResolved = { id, s -> decorator.recordSource(id, s) },
         )
         decorator = PrefetchingStreamProvider(delegate = delegate, scope = applicationScope)
