@@ -16,9 +16,11 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.youtroc.app.YouTrocApp
 import com.youtroc.core.domain.playback.PlaybackManifest
+import com.youtroc.core.domain.playback.PlaybackState
 import com.youtroc.core.domain.stream.HdrFormat
 import com.youtroc.core.domain.video.VideoId
 import com.youtroc.core.ui.component.VideoCardUi
+import com.youtroc.data.extraction.stream.StreamSource
 import com.youtroc.data.persistence.DataStoreWatchProgressStore
 import com.youtroc.data.player.Media3MediaPlayer
 import com.youtroc.data.player.PlayerSurface
@@ -65,6 +67,7 @@ fun PlaybackRoute(
     val context = LocalContext.current
     val appScope = remember { (context.applicationContext as YouTrocApp).applicationScope }
     val watchProgressStore = remember { DataStoreWatchProgressStore(context) }
+    val streamProvider = remember { (context.applicationContext as YouTrocApp).streamProvider }
 
     val playbackViewModel: PlaybackViewModel = viewModel(
         factory = playbackViewModelFactory(
@@ -76,6 +79,7 @@ fun PlaybackRoute(
     )
     val upNextViewModel: UpNextViewModel = viewModel(factory = upNextViewModelFactory(videoId))
     val upNextState by upNextViewModel.state.collectAsState()
+    val nextUpNextId by upNextViewModel.nextUpNextId.collectAsState()
     // MAJOR M1: the concrete adapter the factory built for the ViewModel —
     // read back here (never re-constructed) so PlayerSurface renders into the
     // exact engine the ViewModel drives. Safe: this factory is the ONLY
@@ -86,6 +90,29 @@ fun PlaybackRoute(
 
     LaunchedEffect(Unit) {
         playbackViewModel.start(manifest)
+    }
+
+    // Speculative prefetch (spec: Conservative Single Prefetch Trigger).
+    // stablePlay gates BOTH the early up-next id learning (warmNextId, never
+    // touches the panel's state -- design D2) and the actual prefetch. A
+    // rebuffer (Ready->Buffering->Ready) re-fires this effect, but
+    // UpNextViewModel.warmNextId() is latched (gate C6) so GetVideoDetail is
+    // resolved at most once per video.
+    val stablePlay = playbackState.phase == PlaybackState.Phase.Ready && playbackState.isPlaying
+    LaunchedEffect(stablePlay) {
+        if (stablePlay) upNextViewModel.warmNextId()
+    }
+    LaunchedEffect(stablePlay, nextUpNextId) {
+        val next = nextUpNextId
+        if (stablePlay && next != null && next != videoId) { // C3: never prefetch the current video itself
+            val src = runCatching { streamProvider.lastSourceFor(VideoId(videoId)) }.getOrNull()
+            if (src == StreamSource.OWN) { // C1: POSITIVE gate -- null/FALLBACK/unknown ALL skip
+                runCatching { VideoId(next) }.getOrNull()?.let(streamProvider::prefetch)
+            }
+        }
+    }
+    DisposableEffect(Unit) {
+        onDispose { streamProvider.invalidate() }
     }
 
     // REQ-13: pause on ON_STOP/ON_PAUSE. PlaybackViewModel.pause() also

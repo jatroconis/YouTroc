@@ -7,6 +7,10 @@ import coil3.SingletonImageLoader
 import coil3.memory.MemoryCache
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.crossfade
+import com.youtroc.data.extraction.NewPipeStreamProvider
+import com.youtroc.data.extraction.innertube.InnerTubeStreamProvider
+import com.youtroc.data.extraction.stream.FallbackStreamProvider
+import com.youtroc.data.extraction.stream.PrefetchingStreamProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -28,6 +32,28 @@ class YouTrocApp : Application(), SingletonImageLoader.Factory {
      * `Dispatchers.IO` since every save is a DataStore file write.
      */
     val applicationScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    /**
+     * Speculative-prefetch caching decorator (design D1), same
+     * cross-nav-entry lifetime idiom as [applicationScope]. The delegate
+     * [FallbackStreamProvider]/decorator pair is circular (the delegate's
+     * `onResolved` callback needs the decorator; the decorator wraps the
+     * delegate) — broken by a DEFERRED-capture lambda: the delegate is built
+     * first with a lambda that only dereferences the `lateinit var` when a
+     * resolution actually fires (always after assignment below). Binding
+     * `decorator::recordSource` eagerly here would throw
+     * `UninitializedPropertyAccessException` at construction.
+     */
+    val streamProvider: PrefetchingStreamProvider by lazy {
+        lateinit var decorator: PrefetchingStreamProvider
+        val delegate = FallbackStreamProvider(
+            primary = InnerTubeStreamProvider(),
+            fallback = NewPipeStreamProvider(),
+            onResolved = { id, s -> decorator.recordSource(id, s) },
+        )
+        decorator = PrefetchingStreamProvider(delegate = delegate, scope = applicationScope)
+        decorator
+    }
 
     override fun newImageLoader(context: PlatformContext): ImageLoader =
         ImageLoader.Builder(context)

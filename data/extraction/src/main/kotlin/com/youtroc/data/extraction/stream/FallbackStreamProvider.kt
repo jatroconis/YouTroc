@@ -24,15 +24,29 @@ import com.youtroc.core.domain.video.VideoId
  * Both [primary]/[fallback] stay behind the same [StreamProvider] port, so
  * this class has no knowledge of InnerTube/NewPipe specifics -- pure
  * composition, unit-testable with fakes, no network.
+ *
+ * [onResolved] is a defaulted, backward-compatible signal fired with the
+ * [StreamSource] that actually served the result -- [StreamSource.OWN] on a
+ * primary [StreamResult.Success], [StreamSource.FALLBACK] whenever primary
+ * didn't succeed outright. Speculative prefetch (`PrefetchingStreamProvider`,
+ * `:app`-only) uses it to gate itself on the current video's own engine being
+ * healthy; existing callers that don't pass it are unaffected.
  */
 class FallbackStreamProvider(
     private val primary: StreamProvider,
     private val fallback: StreamProvider,
+    private val onResolved: (VideoId, StreamSource) -> Unit = { _, _ -> },
 ) : StreamProvider {
 
     override suspend fun playableStreams(videoId: VideoId): StreamResult =
         when (val result = primary.playableStreams(videoId)) {
-            is StreamResult.Success -> result
-            StreamResult.NotAvailable, StreamResult.Offline, is StreamResult.Error -> fallback.playableStreams(videoId)
+            is StreamResult.Success -> {
+                onResolved(videoId, StreamSource.OWN)
+                result
+            }
+            StreamResult.NotAvailable, StreamResult.Offline, is StreamResult.Error -> {
+                onResolved(videoId, StreamSource.FALLBACK)
+                fallback.playableStreams(videoId)
+            }
         }
 }

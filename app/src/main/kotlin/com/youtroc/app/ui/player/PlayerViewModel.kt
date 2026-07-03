@@ -5,11 +5,9 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.youtroc.core.domain.playback.GetPlayableStreams
+import com.youtroc.core.domain.stream.StreamProvider
 import com.youtroc.core.domain.stream.StreamResult
 import com.youtroc.core.domain.video.VideoId
-import com.youtroc.data.extraction.NewPipeStreamProvider
-import com.youtroc.data.extraction.innertube.InnerTubeStreamProvider
-import com.youtroc.data.extraction.stream.FallbackStreamProvider
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -63,18 +61,18 @@ class PlayerViewModel(
 
     companion object {
         /**
-         * Composition root for extraction: the only place that wires the
-         * concrete [FallbackStreamProvider] into the domain use case --
-         * own-first ([InnerTubeStreamProvider]) with [NewPipeStreamProvider]
-         * as the safety net for android_vr throttling, errors, and live
-         * video (own is VOD-only; D4).
+         * Composition root for extraction: builds [GetPlayableStreams] over
+         * the port-typed [streamProvider] the caller passes in -- the
+         * concrete `PrefetchingStreamProvider`/`FallbackStreamProvider`
+         * composition lives ONLY in `YouTrocApp.streamProvider` (design D1),
+         * so this factory no longer constructs a fresh adapter chain per
+         * player entry. Cache-transparent: [GetPlayableStreams] sees only
+         * [StreamProvider.playableStreams].
          */
-        fun factory(videoId: String, title: String) = viewModelFactory {
+        fun factory(videoId: String, title: String, streamProvider: StreamProvider) = viewModelFactory {
             initializer {
                 PlayerViewModel(
-                    getPlayableStreams = GetPlayableStreams(
-                        FallbackStreamProvider(InnerTubeStreamProvider(), NewPipeStreamProvider()),
-                    ),
+                    getPlayableStreams = GetPlayableStreams(streamProvider),
                     videoId = videoId,
                     title = title,
                 )

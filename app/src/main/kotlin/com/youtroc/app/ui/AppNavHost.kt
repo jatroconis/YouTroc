@@ -4,12 +4,14 @@ import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.youtroc.app.YouTrocApp
 import com.youtroc.app.ui.player.PlayerScreen
 import com.youtroc.app.ui.player.PlayerViewModel
 import com.youtroc.app.ui.search.SearchRoute
@@ -64,8 +66,13 @@ fun AppNavHost() {
         ) { entry ->
             val videoId = entry.arguments?.getString("videoId").orEmpty()
             val title = entry.arguments?.getString("title").orEmpty()
+            val context = LocalContext.current
             val viewModel: PlayerViewModel = viewModel(
-                factory = PlayerViewModel.factory(videoId = videoId, title = title),
+                factory = PlayerViewModel.factory(
+                    videoId = videoId,
+                    title = title,
+                    streamProvider = (context.applicationContext as YouTrocApp).streamProvider,
+                ),
             )
             val state by viewModel.state.collectAsState()
 

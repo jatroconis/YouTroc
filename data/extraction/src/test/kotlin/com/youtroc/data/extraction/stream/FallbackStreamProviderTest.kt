@@ -36,6 +36,63 @@ class FallbackStreamProviderTest {
 
     @Test
     fun `own success passes through and NewPipe is never invoked`() = runTest {
+        var resolved: Pair<VideoId, StreamSource>? = null
+        val own = FakeStreamProvider(StreamResult.Success(someStreams))
+        val newPipe = FakeStreamProvider(StreamResult.Error(IllegalStateException("should not be called")))
+        val decorator = FallbackStreamProvider(own, newPipe, onResolved = { id, s -> resolved = id to s })
+
+        val result = decorator.playableStreams(videoId)
+
+        assertEquals(StreamResult.Success(someStreams), result)
+        assertFalse(newPipe.wasInvoked)
+        assertEquals(videoId to StreamSource.OWN, resolved)
+    }
+
+    @Test
+    fun `own NotAvailable falls back to and returns NewPipe's result (R4 BLOCKING divergence)`() = runTest {
+        var resolved: Pair<VideoId, StreamSource>? = null
+        val own = FakeStreamProvider(StreamResult.NotAvailable)
+        val newPipe = FakeStreamProvider(StreamResult.Success(someStreams))
+        val decorator = FallbackStreamProvider(own, newPipe, onResolved = { id, s -> resolved = id to s })
+
+        val result = decorator.playableStreams(videoId)
+
+        assertEquals(StreamResult.Success(someStreams), result)
+        assertTrue(newPipe.wasInvoked)
+        assertEquals(videoId to StreamSource.FALLBACK, resolved)
+    }
+
+    @Test
+    fun `own error falls back to and returns NewPipe's result`() = runTest {
+        var resolved: Pair<VideoId, StreamSource>? = null
+        val own = FakeStreamProvider(StreamResult.Error(IllegalStateException("boom")))
+        val newPipe = FakeStreamProvider(StreamResult.Success(someStreams))
+        val decorator = FallbackStreamProvider(own, newPipe, onResolved = { id, s -> resolved = id to s })
+
+        val result = decorator.playableStreams(videoId)
+
+        assertEquals(StreamResult.Success(someStreams), result)
+        assertTrue(newPipe.wasInvoked)
+        assertEquals(videoId to StreamSource.FALLBACK, resolved)
+    }
+
+    @Test
+    fun `own offline falls back to and returns NewPipe's result`() = runTest {
+        var resolved: Pair<VideoId, StreamSource>? = null
+        val newPipeFailure = StreamResult.Error(IllegalStateException("still down"))
+        val own = FakeStreamProvider(StreamResult.Offline)
+        val newPipe = FakeStreamProvider(newPipeFailure)
+        val decorator = FallbackStreamProvider(own, newPipe, onResolved = { id, s -> resolved = id to s })
+
+        val result = decorator.playableStreams(videoId)
+
+        assertEquals(newPipeFailure, result)
+        assertTrue(newPipe.wasInvoked)
+        assertEquals(videoId to StreamSource.FALLBACK, resolved)
+    }
+
+    @Test
+    fun `onResolved defaults to a no-op when not provided`() = runTest {
         val own = FakeStreamProvider(StreamResult.Success(someStreams))
         val newPipe = FakeStreamProvider(StreamResult.Error(IllegalStateException("should not be called")))
         val decorator = FallbackStreamProvider(own, newPipe)
@@ -43,44 +100,6 @@ class FallbackStreamProviderTest {
         val result = decorator.playableStreams(videoId)
 
         assertEquals(StreamResult.Success(someStreams), result)
-        assertFalse(newPipe.wasInvoked)
-    }
-
-    @Test
-    fun `own NotAvailable falls back to and returns NewPipe's result (R4 BLOCKING divergence)`() = runTest {
-        val own = FakeStreamProvider(StreamResult.NotAvailable)
-        val newPipe = FakeStreamProvider(StreamResult.Success(someStreams))
-        val decorator = FallbackStreamProvider(own, newPipe)
-
-        val result = decorator.playableStreams(videoId)
-
-        assertEquals(StreamResult.Success(someStreams), result)
-        assertTrue(newPipe.wasInvoked)
-    }
-
-    @Test
-    fun `own error falls back to and returns NewPipe's result`() = runTest {
-        val own = FakeStreamProvider(StreamResult.Error(IllegalStateException("boom")))
-        val newPipe = FakeStreamProvider(StreamResult.Success(someStreams))
-        val decorator = FallbackStreamProvider(own, newPipe)
-
-        val result = decorator.playableStreams(videoId)
-
-        assertEquals(StreamResult.Success(someStreams), result)
-        assertTrue(newPipe.wasInvoked)
-    }
-
-    @Test
-    fun `own offline falls back to and returns NewPipe's result`() = runTest {
-        val newPipeFailure = StreamResult.Error(IllegalStateException("still down"))
-        val own = FakeStreamProvider(StreamResult.Offline)
-        val newPipe = FakeStreamProvider(newPipeFailure)
-        val decorator = FallbackStreamProvider(own, newPipe)
-
-        val result = decorator.playableStreams(videoId)
-
-        assertEquals(newPipeFailure, result)
-        assertTrue(newPipe.wasInvoked)
     }
 }
 

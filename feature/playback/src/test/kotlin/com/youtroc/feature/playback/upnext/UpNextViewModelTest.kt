@@ -207,4 +207,58 @@ class UpNextViewModelTest {
         assertEquals(DetailUiState.NotAvailable, viewModel.state.value)
         assertEquals(0, fake.callCount)
     }
+
+    @Test
+    fun `warmNextId sets nextUpNextId to the first related video's id and does not change state`() = runTest {
+        val fake = FakeVideoDetail(DetailResult.Success(detail))
+        val viewModel = UpNextViewModel(videoId = "dQw4w9WgXcQ", getVideoDetail = GetVideoDetail(fake))
+
+        viewModel.warmNextId()
+        mainScheduler.advanceUntilIdle()
+
+        assertEquals("relatedVid1", viewModel.nextUpNextId.value)
+        assertEquals(DetailUiState.Loading, viewModel.state.value)
+        assertEquals(1, fake.callCount)
+    }
+
+    @Test
+    fun `a repeated warmNextId call does not re-invoke the port (rebuffer Ready-Buffering-Ready)`() = runTest {
+        val fake = FakeVideoDetail(DetailResult.Success(detail))
+        val viewModel = UpNextViewModel(videoId = "dQw4w9WgXcQ", getVideoDetail = GetVideoDetail(fake))
+
+        viewModel.warmNextId()
+        mainScheduler.advanceUntilIdle()
+        assertEquals(1, fake.callCount)
+
+        viewModel.warmNextId()
+        mainScheduler.advanceUntilIdle()
+
+        assertEquals(1, fake.callCount)
+    }
+
+    @Test
+    fun `ensureLoaded after a completed warmNextId publishes the warmed content without a second port call`() = runTest {
+        val fake = FakeVideoDetail(DetailResult.Success(detail))
+        val viewModel = UpNextViewModel(videoId = "dQw4w9WgXcQ", getVideoDetail = GetVideoDetail(fake))
+
+        viewModel.warmNextId()
+        mainScheduler.advanceUntilIdle()
+        assertEquals(1, fake.callCount)
+        assertEquals(DetailUiState.Loading, viewModel.state.value)
+
+        viewModel.ensureLoaded()
+        mainScheduler.advanceUntilIdle()
+
+        val expected = DetailUiState.Content(
+            VideoDetailUi(
+                title = "Never Gonna Give You Up",
+                channel = "Rick Astley",
+                meta = "1.6 B vistas · hace 15 a.",
+                description = "The official video",
+                related = listOf(relatedVideo.toVideoCardUi()),
+            ),
+        )
+        assertEquals(expected, viewModel.state.value)
+        assertEquals(1, fake.callCount)
+    }
 }
