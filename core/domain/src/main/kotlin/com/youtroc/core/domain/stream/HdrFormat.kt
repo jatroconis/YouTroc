@@ -5,7 +5,7 @@ package com.youtroc.core.domain.stream
  * source's own colorInfo (own-engine PLAYER response, or NewPipe's
  * fallback). This is INTENT only -- it never touches Media3's own
  * container-derived `ColorInfo` (decode), it exists purely to let `:app`
- * decide when to request [android.view.Window.setColorMode].
+ * decide when to request the display's HDR color mode.
  */
 enum class HdrFormat {
     SDR,
