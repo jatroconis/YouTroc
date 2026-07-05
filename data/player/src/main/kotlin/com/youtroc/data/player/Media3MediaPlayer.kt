@@ -141,6 +141,7 @@ class Media3MediaPlayer(context: Context) : MediaPlayerPort {
                     updatePositionTicker(isPlaying)
                 }
                 override fun onPlayerErrorChanged(error: PlaybackException?) = publishState()
+                override fun onPlayerError(error: PlaybackException) = recoverFromUnservableRendition(error)
 
                 override fun onTracksChanged(tracks: Tracks) {
                     availableQualities = VideoQualityCatalog.from(videoRenditionsOf(tracks))
@@ -205,6 +206,48 @@ class Media3MediaPlayer(context: Context) : MediaPlayerPort {
 
     override fun selectAuto() {
         applyAutoWindow()
+        publishState()
+    }
+
+    /**
+     * Recover from a FATAL segment-load error instead of dying to a black
+     * screen. Observed on-device (TCL 55C6K): selecting 4K on the android_vr
+     * manifest makes the 2160p Representation's googlevideo segment return HTTP
+     * 403, ExoPlayer raises [PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS] as
+     * a fatal error, the player goes IDLE and tears down the codec/surface — the
+     * black screen. A rendition whose bytes are Forbidden must NOT end playback:
+     * cap the size window strictly below the failed ceiling so neither the pin
+     * nor ABR re-selects the un-servable rung, drop back to Automatic, and
+     * `prepare()` retries from the retained position. Each 403 ratchets the cap
+     * down one real rung, so a chain of forbidden high-res formats degrades
+     * gracefully and terminates once a servable quality (or the floor) is
+     * reached. Non-403 fatal errors keep the prior surface-through behaviour
+     * (publish the error phase for the UI).
+     *
+     * The sibling `onPlayerErrorChanged` also publishes for the same
+     * [PlaybackException] — deliberate, not accidental duplication: publishes
+     * are idempotent snapshots, and both fire in the same main-thread tick so
+     * the conflated [state] flow only ever exposes the post-recovery snapshot.
+     */
+    private fun recoverFromUnservableRendition(error: PlaybackException) {
+        if (error.errorCode != PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS) {
+            publishState()
+            return
+        }
+        val failedCeilingPx = trackSelector.parameters.maxVideoHeight
+        val nextRungPx = availableQualities.map { it.heightPx }.filter { it < failedCeilingPx }.maxOrNull()
+        if (nextRungPx == null) {
+            publishState()
+            return
+        }
+        pinnedHeight = null
+        trackSelector.setParameters(
+            trackSelector.parameters.buildUpon()
+                .setMinVideoSize(0, 0)
+                .setMaxVideoSize(MAX_VIDEO_WIDTH, nextRungPx)
+                .build(),
+        )
+        player.prepare()
         publishState()
     }
 
