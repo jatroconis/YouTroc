@@ -75,6 +75,7 @@ fun PlayerScreen(
                 manifest = state.manifest,
                 title = state.title,
                 hdr = state.hdr,
+                storyboard = state.storyboard,
                 onUpNextClick = onUpNextClick,
             )
 

@@ -5,9 +5,11 @@ import com.youtroc.core.domain.stream.StreamKind
 import org.schabi.newpipe.extractor.MediaFormat
 import org.schabi.newpipe.extractor.services.youtube.ItagItem
 import org.schabi.newpipe.extractor.stream.DeliveryMethod
+import org.schabi.newpipe.extractor.stream.Frameset
 import org.schabi.newpipe.extractor.stream.VideoStream
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 /**
  * T10 investigation (apply-time, per design/tasks): decompiled
@@ -43,5 +45,34 @@ class NewPipeStreamProviderMappingTest {
         val stream = with(provider) { videoStream().toDomainOrNull(StreamKind.VIDEO_ONLY) }
 
         assertEquals(HdrFormat.SDR, stream?.hdr)
+    }
+
+    // ---- REQ-SB1: NewPipe fallback rung storyboard wiring ----
+
+    @Test
+    fun `a real Frameset maps into a StoryboardSpec via toStoryboardSpecOrNull -- the NewPipe fallback wiring`() {
+        val frameset = Frameset(
+            listOf("https://cdn/board0.jpg", "https://cdn/board1.jpg"),
+            160, // frameWidth
+            90, // frameHeight
+            200, // totalCount
+            2000, // durationPerFrame
+            5, // framesPerPageX
+            5, // framesPerPageY
+        )
+
+        val level = requireNotNull(frameset.toStoryboardSpecOrNull()?.previewLevel())
+
+        assertEquals(listOf("https://cdn/board0.jpg", "https://cdn/board1.jpg"), level.pageUrls)
+        assertEquals(2000L, level.intervalMs)
+        assertEquals(5, level.columns)
+        assertEquals(5, level.rows)
+    }
+
+    @Test
+    fun `a degenerate Frameset with no grid columns maps to null, gate F1's uniform null contract`() {
+        val degenerate = Frameset(listOf("https://cdn/board0.jpg"), 160, 90, 200, 2000, 0, 0)
+
+        assertNull(degenerate.toStoryboardSpecOrNull())
     }
 }

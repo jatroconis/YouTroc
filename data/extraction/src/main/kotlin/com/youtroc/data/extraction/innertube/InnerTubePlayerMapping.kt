@@ -166,7 +166,13 @@ internal fun PlayerResponse.resolveDurationMs(): Long? {
  *   (insufficient) -- never a degraded muxed-only [StreamResult.Success].
  * - `status == "OK"` with no usable [resolveDurationMs] (R5 BLOCKING) -> [StreamResult.Error];
  *   [MpdBuilder.buildMpd] is NEVER invoked with a non-positive duration.
- * - Otherwise -> [StreamResult.Success] carrying the own-built DASH [PlaybackManifest].
+ * - Otherwise -> [StreamResult.Success] carrying the own-built DASH [PlaybackManifest]
+ *   plus a scrub-preview [com.youtroc.core.domain.stream.StoryboardSpec] (REQ-SB1),
+ *   shared by both the android_vr and ios ladder rungs since they call this SAME
+ *   function. Parsing failures NEVER fail stream resolution (REQ-SB2, design D6):
+ *   [storyboards]' `spec` is routed through [toStoryboardSpecOrNull] inside
+ *   `runCatching{}.getOrNull()`, so an absent node, a malformed spec, or any
+ *   unexpected exception all resolve to a `null` storyboard.
  */
 internal fun PlayerResponse.toStreamResult(): StreamResult {
     if (playabilityStatus?.status != "OK") return StreamResult.NotAvailable
@@ -187,7 +193,8 @@ internal fun PlayerResponse.toStreamResult(): StreamResult {
 
     val mpd = MpdBuilder.buildMpd(video, audio, durationMs)
     val manifest = PlaybackManifest(kind = PlaybackManifest.Kind.DASH, payload = mpd, adaptive = true)
-    return StreamResult.Success(PlayableStreams(streamingData.toDomainStreams(), manifest))
+    val storyboard = runCatching { storyboards?.playerStoryboardSpecRenderer?.spec?.toStoryboardSpecOrNull() }.getOrNull()
+    return StreamResult.Success(PlayableStreams(streamingData.toDomainStreams(), manifest, storyboard))
 }
 
 /**

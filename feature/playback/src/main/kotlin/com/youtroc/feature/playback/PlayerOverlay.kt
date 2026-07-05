@@ -70,6 +70,7 @@ import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import com.youtroc.core.domain.playback.PlaybackState
 import com.youtroc.core.domain.playback.VideoQuality
+import com.youtroc.core.domain.stream.StoryboardSpec
 import com.youtroc.core.ui.component.VideoCardUi
 import com.youtroc.core.ui.theme.OnDark
 import com.youtroc.core.ui.theme.OnDarkMuted
@@ -80,6 +81,7 @@ import com.youtroc.feature.playback.overlay.OverlayState
 import com.youtroc.feature.playback.overlay.PlaybackTimeFormatter
 import com.youtroc.feature.playback.overlay.PlayerMenu
 import com.youtroc.feature.playback.overlay.PlayerMenuReducer
+import com.youtroc.feature.playback.overlay.ScrubSeekSync
 import com.youtroc.feature.playback.overlay.SeekAmount
 import com.youtroc.feature.playback.overlay.decideDpadAction
 import com.youtroc.feature.playback.overlay.isDpadKey
@@ -158,6 +160,7 @@ fun PlayerOverlay(
     title: String,
     playbackState: PlaybackState,
     modifier: Modifier = Modifier,
+    storyboard: StoryboardSpec? = null,
     onPlayPause: () -> Unit = {},
     onSeekTo: (positionMs: Long) -> Unit = {},
     availableQualities: List<VideoQuality> = emptyList(),
@@ -186,6 +189,11 @@ fun PlayerOverlay(
     // debounce effect below), so seeking never re-buffers per step and the
     // timeline moves freely even into not-yet-buffered regions.
     var scrubPreviewMs by remember { mutableStateOf<Long?>(null) }
+    // Pending-seek latch ([ScrubSeekSync]): the committed target the engine
+    // has not caught up to yet. Keeps the bar (and the BASE of a follow-up
+    // scrub) on the committed target instead of snapping back to a stale
+    // engine position while the seek is still buffering.
+    var pendingSeekMs by remember { mutableStateOf<Long?>(null) }
     var lastActivityMs by remember { mutableLongStateOf(0L) }
     var pendingEnterControls by remember { mutableStateOf(false) }
     var longPressActive by remember { mutableStateOf(false) }
@@ -246,8 +254,16 @@ fun PlayerOverlay(
     LaunchedEffect(scrubPreviewMs) {
         val target = scrubPreviewMs ?: return@LaunchedEffect
         delay(SCRUB_COMMIT_DELAY_MS)
+        // Latch BEFORE clearing the preview so the bar hands off preview →
+        // pending → engine with no frame where a stale engine position wins.
+        pendingSeekMs = target
         currentOnSeekTo(target)
         scrubPreviewMs = null
+    }
+
+    // Release the pending-seek latch once the engine reports it caught up.
+    LaunchedEffect(playbackState.positionMs, pendingSeekMs) {
+        pendingSeekMs = ScrubSeekSync.resolvePending(pendingSeekMs, playbackState.positionMs)
     }
 
     // Gate R2: the Info+Up-Next panel is CONDITIONALLY composed (only when
@@ -376,7 +392,10 @@ fun PlayerOverlay(
                         // never focusable there, so this is unreachable in live.
                         if (!isLive) {
                             val duration = playbackState.durationMs.coerceAtLeast(0L)
-                            val base = scrubPreviewMs ?: playbackState.positionMs
+                            // Base = preview → pending → engine: a follow-up
+                            // scrub continues from the in-flight target, never
+                            // from the stale pre-seek engine position.
+                            val base = ScrubSeekSync.displayPosition(scrubPreviewMs, pendingSeekMs, playbackState.positionMs)
                             scrubPreviewMs = (base + action.deltaMs).coerceIn(0L, duration)
                         }
                         registerActivity()
@@ -421,11 +440,12 @@ fun PlayerOverlay(
                     LiveIndicator()
                 } else {
                     Scrubber(
-                        // Show the decoupled preview cursor while scrubbing; fall
-                        // back to the live position when settled.
-                        positionMs = scrubPreviewMs ?: playbackState.positionMs,
+                        // Preview while scrubbing, committed target while the
+                        // seek is in flight, engine position once caught up.
+                        positionMs = ScrubSeekSync.displayPosition(scrubPreviewMs, pendingSeekMs, playbackState.positionMs),
                         durationMs = playbackState.durationMs,
                         scrubbing = scrubPreviewMs != null,
+                        storyboard = storyboard,
                         focusRequester = scrubberFocus,
                         downFocus = playPauseFocus,
                         onFocusChanged = { scrubberFocused = it },
@@ -581,6 +601,11 @@ private fun BufferingSpinner(modifier: Modifier = Modifier) {
  * ([downFocus]); UP/LEFT/RIGHT are cancelled so focus never escapes the zone
  * (LEFT/RIGHT are consumed as seeks upstream and never reach focus search — the
  * cancels are belt-and-suspenders).
+ *
+ * [storyboard] renders [ScrubPreviewThumbnail] above the track (REQ-SB6),
+ * reusing this composable's own `fullWidth`/`fraction` thumb math -- gated
+ * internally on `scrubbing && storyboard != null`, so a null [storyboard]
+ * (extraction never resolved one) renders exactly today's plain scrubber.
  */
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -588,6 +613,7 @@ private fun Scrubber(
     positionMs: Long,
     durationMs: Long,
     scrubbing: Boolean,
+    storyboard: StoryboardSpec?,
     focusRequester: FocusRequester,
     downFocus: FocusRequester,
     onFocusChanged: (Boolean) -> Unit,
@@ -642,6 +668,15 @@ private fun Scrubber(
                         .background(OnDark, CircleShape),
                 )
             }
+
+            ScrubPreviewThumbnail(
+                storyboard = storyboard,
+                scrubbing = scrubbing,
+                positionMs = positionMs,
+                fullWidth = fullWidth,
+                fraction = fraction,
+                modifier = Modifier.align(Alignment.TopStart),
+            )
         }
         Text(
             text = "${PlaybackTimeFormatter.format(positionMs)} / ${PlaybackTimeFormatter.format(durationMs)}",

@@ -79,4 +79,30 @@ class PlayableStreamsTest {
 
         assertEquals(HdrFormat.SDR, playableStreams.hdr)
     }
+
+    @Test
+    fun `storyboard defaults to null when not provided, so pre-existing construction keeps compiling`() {
+        assertNull(PlayableStreams(listOf(anyStream)).storyboard)
+    }
+
+    @Test
+    fun `carries the storyboard when provided`() {
+        val storyboard = StoryboardSpec(
+            listOf(
+                StoryboardLevel(
+                    tileWidthPx = 160,
+                    tileHeightPx = 90,
+                    columns = 5,
+                    rows = 5,
+                    intervalMs = 2000,
+                    totalFrames = 40,
+                    pageUrls = listOf("https://cdn/M0.jpg"),
+                ),
+            ),
+        )
+
+        val playableStreams = PlayableStreams(listOf(anyStream), storyboard = storyboard)
+
+        assertEquals(storyboard, playableStreams.storyboard)
+    }
 }

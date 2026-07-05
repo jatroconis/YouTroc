@@ -11,10 +11,17 @@ import com.youtroc.core.domain.playback.PlaybackManifest
  * decided on (DASH/PROGRESSIVE/MERGED), when one could be assembled. Additive
  * and defaulted to null so existing REQ-1..7 construction keeps compiling
  * unchanged.
+ *
+ * [storyboard] is the scrub-preview sprite data (REQ-SB5), populated from
+ * whichever ladder rung actually resolved streams. Additive and defaulted to
+ * null for the same reason as [manifest] -- absent (extraction failure, or a
+ * live video, which never builds one) means the caller falls back to today's
+ * plain scrubber with no thumbnail.
  */
 data class PlayableStreams(
     val streams: List<Stream>,
     val manifest: PlaybackManifest? = null,
+    val storyboard: StoryboardSpec? = null,
 ) {
     init {
         require(streams.isNotEmpty() || manifest?.kind?.isLive == true) {

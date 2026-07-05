@@ -46,7 +46,7 @@ class PlayerViewModel(
                     // A null manifest means the selection policy couldn't assemble any
                     // valid delivery (no DASH/MUXED, and no video+audio pair to merge).
                     if (manifest != null) {
-                        PlayerUiState.Ready(manifest, title, result.streams.hdr)
+                        PlayerUiState.Ready(manifest, title, result.streams.hdr, result.streams.storyboard)
                     } else {
                         PlayerUiState.NotAvailable
                     }

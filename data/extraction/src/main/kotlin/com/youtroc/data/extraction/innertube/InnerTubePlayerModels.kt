@@ -34,6 +34,7 @@ internal data class PlayerResponse(
     val playabilityStatus: PlayabilityStatus? = null,
     val streamingData: StreamingData? = null,
     val videoDetails: VideoDetails? = null,
+    val storyboards: Storyboards? = null,
 )
 
 @Serializable
@@ -99,4 +100,21 @@ internal data class Range(
 internal data class VideoDetails(
     val lengthSeconds: String? = null,
     val isLiveContent: Boolean? = null,
+)
+
+/**
+ * Wrapper around the scrub-preview storyboard renderer (REQ-SB1). Only
+ * `playerStoryboardSpecRenderer` is modeled -- the live-only
+ * `playerLiveStoryboardSpecRenderer` variant is out of scope (proposal: no
+ * live-stream preview).
+ */
+@Serializable
+internal data class Storyboards(
+    val playerStoryboardSpecRenderer: PlayerStoryboardSpecRenderer? = null,
+)
+
+/** Carries the raw `spec` string [toStoryboardSpecOrNull] parses into a domain [com.youtroc.core.domain.stream.StoryboardSpec]. */
+@Serializable
+internal data class PlayerStoryboardSpecRenderer(
+    val spec: String? = null,
 )

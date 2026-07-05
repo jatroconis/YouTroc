@@ -59,7 +59,12 @@ class NewPipeStreamProvider(
             // not a healthy extraction: treat as "cannot play anonymously".
             StreamResult.NotAvailable
         } else {
-            StreamResult.Success(PlayableStreams(streams, manifest(info, streams)))
+            // REQ-SB1 (terminal fallback rung): the FIRST previewFrames entry maps
+            // onto the same domain StoryboardSpec the InnerTube parser produces.
+            // REQ-SB2: never fails extraction -- any unexpected failure (or an
+            // absent/degenerate Frameset, gate F1) resolves to a null storyboard.
+            val storyboard = runCatching { info.previewFrames.orEmpty().firstOrNull()?.toStoryboardSpecOrNull() }.getOrNull()
+            StreamResult.Success(PlayableStreams(streams, manifest(info, streams), storyboard))
         }
     }
 

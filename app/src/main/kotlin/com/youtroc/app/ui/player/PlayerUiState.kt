@@ -2,6 +2,7 @@ package com.youtroc.app.ui.player
 
 import com.youtroc.core.domain.playback.PlaybackManifest
 import com.youtroc.core.domain.stream.HdrFormat
+import com.youtroc.core.domain.stream.StoryboardSpec
 
 /**
  * Deterministic states the player screen can render. It mirrors the domain's
@@ -17,9 +18,16 @@ sealed interface PlayerUiState {
      * A playable [PlaybackManifest] is ready to hand to the `MediaPlayer` port.
      * [hdr] carries the selected streams' aggregate HDR intent (REQ-H5) --
      * [PlaybackRoute] uses it to decide whether to opt the Window into HDR
-     * display mode.
+     * display mode. [storyboard] carries the scrub-preview sprite data
+     * (REQ-SB5) -- additive and defaulted to null, so it renders no thumbnail
+     * when extraction never resolved one.
      */
-    data class Ready(val manifest: PlaybackManifest, val title: String, val hdr: HdrFormat) : PlayerUiState
+    data class Ready(
+        val manifest: PlaybackManifest,
+        val title: String,
+        val hdr: HdrFormat,
+        val storyboard: StoryboardSpec? = null,
+    ) : PlayerUiState
 
     /**
      * The video exists but cannot be played anonymously (age-gated, removed,

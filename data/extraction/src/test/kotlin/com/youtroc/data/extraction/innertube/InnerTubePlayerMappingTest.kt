@@ -274,4 +274,62 @@ class InnerTubePlayerMappingTest {
         assertNotNull(stream)
         assertEquals(HdrFormat.SDR, stream?.hdr)
     }
+
+    // ---- REQ-SB1/SB2: storyboards.playerStoryboardSpecRenderer.spec threading ----
+    // Inline JSON literals (like the colorInfo section above): the shared
+    // player_android_vr.json fixture predates this capability and carries no
+    // storyboards node at all.
+
+    private fun playerResponseJson(storyboardsNode: String): String = """
+        {
+          "playabilityStatus": {"status": "OK"},
+          "videoDetails": {"lengthSeconds": "213"},
+          $storyboardsNode
+          "streamingData": {
+            "adaptiveFormats": [
+              {"itag":313,"url":"https://cdn/video","mimeType":"video/webm; codecs=\"vp09.02.51.10\"","bitrate":18076636,
+               "width":3840,"height":2160,"initRange":{"start":"0","end":"220"},"indexRange":{"start":"221","end":"893"},
+               "approxDurationMs":"213040"},
+              {"itag":139,"url":"https://cdn/audio","mimeType":"audio/mp4; codecs=\"mp4a.40.5\"","bitrate":48000,
+               "initRange":{"start":"0","end":"31"},"indexRange":{"start":"32","end":"570"},"audioSampleRate":"22050",
+               "approxDurationMs":"213040"}
+            ]
+          }
+        }
+    """.trimIndent()
+
+    @Test
+    fun `toStreamResult parses a present storyboards spec into PlayableStreams storyboard`() {
+        val storyboardsNode = """
+            "storyboards": {"playerStoryboardSpecRenderer": {"spec":
+              "https://i.ytimg.com/sb/vid/storyboard3_L${'$'}L/${'$'}N.jpg?sqp=-e30%2C|48#27#1#1#1#0#M${'$'}M#rs${'$'}AOn4CLA1|160#90#107#5#5#2000#M${'$'}M#rs${'$'}AOn4CLA3"
+            }},
+        """.trimIndent()
+        val response: PlayerResponse = lenientJson.decodeFromString(playerResponseJson(storyboardsNode))
+
+        val result = response.toStreamResult()
+
+        assertIs<StreamResult.Success>(result)
+        val storyboard = requireNotNull(result.streams.storyboard)
+        assertEquals(160, requireNotNull(storyboard.previewLevel()).tileWidthPx) // L2 wins over L0
+    }
+
+    @Test
+    fun `toStreamResult resolves storyboard to null, without failing Success, when the spec is malformed`() {
+        val storyboardsNode = """"storyboards": {"playerStoryboardSpecRenderer": {"spec": "not-a-real-spec"}},"""
+        val response: PlayerResponse = lenientJson.decodeFromString(playerResponseJson(storyboardsNode))
+
+        val result = response.toStreamResult()
+
+        assertIs<StreamResult.Success>(result)
+        assertNull(result.streams.storyboard)
+    }
+
+    @Test
+    fun `toStreamResult resolves storyboard to null when the storyboards node is entirely absent`() {
+        val result = response.toStreamResult() // shared fixture carries no storyboards node
+
+        assertIs<StreamResult.Success>(result)
+        assertNull(result.streams.storyboard)
+    }
 }

@@ -18,6 +18,7 @@ import com.youtroc.app.YouTrocApp
 import com.youtroc.core.domain.playback.PlaybackManifest
 import com.youtroc.core.domain.playback.PlaybackState
 import com.youtroc.core.domain.stream.HdrFormat
+import com.youtroc.core.domain.stream.StoryboardSpec
 import com.youtroc.core.domain.video.VideoId
 import com.youtroc.core.ui.component.VideoCardUi
 import com.youtroc.data.extraction.stream.StreamSource
@@ -60,6 +61,7 @@ fun PlaybackRoute(
     manifest: PlaybackManifest,
     title: String,
     hdr: HdrFormat,
+    storyboard: StoryboardSpec? = null,
     onUpNextClick: (VideoCardUi) -> Unit = {},
 ) {
     HdrDisplayController(hdr)
@@ -143,6 +145,7 @@ fun PlaybackRoute(
             title = title,
             playbackState = playbackState,
             modifier = Modifier.fillMaxSize(),
+            storyboard = storyboard,
             onPlayPause = playbackViewModel::togglePlayPause,
             onSeekTo = playbackViewModel::seekTo,
             availableQualities = playbackState.availableQualities,
