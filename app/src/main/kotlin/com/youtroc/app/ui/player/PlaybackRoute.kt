@@ -144,7 +144,7 @@ fun PlaybackRoute(
             playbackState = playbackState,
             modifier = Modifier.fillMaxSize(),
             onPlayPause = playbackViewModel::togglePlayPause,
-            onSeek = playbackViewModel::seekBy,
+            onSeekTo = playbackViewModel::seekTo,
             availableQualities = playbackState.availableQualities,
             activeQuality = playbackState.activeQuality,
             onSelectQuality = playbackViewModel::onSelectQuality,
@@ -156,8 +156,6 @@ fun PlaybackRoute(
             onUpNextClick = onUpNextClick,
             onUpNextRetry = upNextViewModel::retry,
             onPanelOpened = upNextViewModel::ensureLoaded,
-            // prev/next/like/dislike/captions stay PlayerOverlay's default
-            // no-ops until that feature exists (spec Non-Goals).
         )
     }
 }

@@ -12,27 +12,25 @@ import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ClosedCaption
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.SkipNext
-import androidx.compose.material.icons.filled.SkipPrevious
-import androidx.compose.material.icons.filled.ThumbDown
-import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -41,11 +39,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
@@ -61,6 +61,7 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.Icon
@@ -81,6 +82,7 @@ import com.youtroc.feature.playback.overlay.PlayerMenu
 import com.youtroc.feature.playback.overlay.PlayerMenuReducer
 import com.youtroc.feature.playback.overlay.SeekAmount
 import com.youtroc.feature.playback.overlay.decideDpadAction
+import com.youtroc.feature.playback.overlay.isDpadKey
 import com.youtroc.feature.playback.quality.QualityMenu
 import com.youtroc.feature.playback.settings.SettingsMenu
 import com.youtroc.feature.playback.upnext.DetailUiState
@@ -88,69 +90,67 @@ import com.youtroc.feature.playback.upnext.InfoUpNextPanel
 import kotlinx.coroutines.delay
 
 /**
+ * Debounce window for the decoupled-scrub commit: the overlay waits this long
+ * after the LAST L/R scrub tick before issuing a single absolute seek to the
+ * previewed position, so a held or rapid scrub never re-buffers per step.
+ */
+private const val SCRUB_COMMIT_DELAY_MS = 400L
+
+/**
  * Custom Compose-for-TV player overlay (REQ-11, docs/07 § Player a pantalla
- * completa / § 10). Renders the title, a position/duration scrubber, a
- * buffering spinner, and a 2D control area: a TRANSPORT row (prev /
- * play-pause centered / next) with a PILLS row (like/dislike/CC/settings)
- * below it.
+ * completa / § 10), Netflix-style redesign. When VISIBLE it stacks three
+ * vertically navigable focus ZONES, top → bottom:
  *
- * D-pad L/R drives the reveal-then-seek gesture ([decideDpadAction]) while no
- * button in the control rows owns focus: the first press only reveals the
- * overlay, the next one seeks. Once the user moves focus into the rows
- * (DOWN, or CENTER/Enter), L/R falls through to Compose's normal per-row
- * focus search instead, and vertical UP/DOWN is wired explicitly between the
- * two rows — HomeShell's proven `focusGroup()` + `focusProperties` pattern —
- * so neither row traps focus.
+ * 1. **Timeline scrubber** — a FOCUSABLE progress bar. While it owns focus,
+ *    LEFT/RIGHT move a DECOUPLED preview cursor ([SeekAmount] steps) that
+ *    commits as a SINGLE absolute seek ([onSeekTo]) once scrubbing settles —
+ *    the engine is never seeked per tick, so a held/rapid scrub moves freely
+ *    across the whole timeline without re-buffering per step (the Netflix/Prime
+ *    model). OK toggles play/pause. It shows a distinct focused state (taller
+ *    track + a thumb + brighter time label) so the user sees it is active. Live
+ *    has no scrubbing (REQ-L7), so [LiveIndicator] replaces it and is
+ *    deliberately non-focusable.
+ * 2. **Controls row** — exactly TWO controls: play/pause and the ⚙ settings
+ *    button (no prev/next — the old dead SkipPrevious/SkipNext buttons were
+ *    removed). LEFT/RIGHT move between the two, CONTAINED so they never escape
+ *    the screen (`focusProperties.exit` → [FocusRequester.Cancel] at the
+ *    boundaries — the fix for the old transport row's LEFT-exits-player bug).
+ * 3. **Up-next panel** ("A continuación", `upnext` package) — reachable by
+ *    DOWN from the controls row.
  *
- * Entering the controls (DOWN) defers the focus move to a
- * `LaunchedEffect(visible, pendingEnterControls)` — HomeShell's proven
- * pattern (MAJOR M2): the transport/pills rows only compose once [visible]
- * flips to `true`, one frame AFTER the key event that revealed them, so
- * calling `requestFocus()` inline during the event handler targets a node
- * that isn't attached yet and silently throws (swallowed by `runCatching`).
- * CENTER/Enter skip focus entirely and call [onPlayPause] directly (docs/07
- * §191: CENTER = play/pause) whenever no control-row button owns focus —
- * Hidden (no not-yet-composed button to focus) OR Revealed-but-unfocused
- * (e.g. right after a single L/R tap only revealed the overlay without
- * moving focus into a row).
+ * D-pad map (see [decideDpadAction] for the pure decision):
+ * - Overlay HIDDEN: ANY D-pad press reveals the overlay with focus on
+ *   play/pause. There is no reveal-then-seek anymore — seeking lives entirely
+ *   on the focused scrubber.
+ * - Controls row: OK toggles play/pause; LEFT/RIGHT move between the two
+ *   controls (contained); UP → scrubber; DOWN → up-next panel.
+ * - Scrubber: LEFT/RIGHT move the decoupled preview cursor (committed as one
+ *   seek on settle, [SCRUB_COMMIT_DELAY_MS]); OK = play/pause; DOWN → controls;
+ *   UP is contained (top zone).
+ * - BACK: settings menu or up-next panel open → close it (restore focus to the
+ *   controls row); else visible → hide overlay; else → the caller's `onBack`.
+ *   LEFT/RIGHT never trigger exit.
  *
- * D-pad navigation ([Key.DirectionLeft]/[Key.DirectionRight]/[Key.DirectionUp]/
- * [Key.DirectionDown]/[Key.DirectionCenter]/[Key.Enter]) counts as control
- * activity and restarts the 4s auto-hide timer even while browsing between
- * buttons/rows with focus already inside the controls, not just on click —
- * see [isDpadNavigationKey] in the key handler below.
+ * Focus is CONTAINED per zone with `focusGroup()` + `focusProperties` so no
+ * zone lets focus escape the overlay. Focus moves into a zone are DEFERRED one
+ * frame via `LaunchedEffect` (MAJOR M2, HomeShell's proven pattern): the
+ * revealed zones only compose once [visible] flips to `true`, so requesting
+ * focus inline during the key event would target a not-yet-attached node.
  *
  * Knows nothing about Media3 or the concrete engine — only the domain
- * [PlaybackState] snapshot and plain callbacks. Integration-only:
- * exercising real D-pad focus/timing needs a real TV input stack, so this is
- * validated on the TCL 55C6K rather than unit-tested — the same convention
- * already used for `Media3MediaPlayer`/`PlayerSurface`. The pure pieces it
- * delegates to ([decideDpadAction], [OverlayReducer], [SeekAmount],
- * [PlaybackTimeFormatter]) ARE unit-tested.
+ * [PlaybackState] snapshot and plain callbacks. Integration-only: exercising
+ * real D-pad focus/timing needs a real TV input stack, so this is validated on
+ * the TCL 55C6K rather than unit-tested. The pure pieces it delegates to
+ * ([decideDpadAction], [OverlayReducer], [SeekAmount], [PlaybackTimeFormatter])
+ * ARE unit-tested.
  *
- * The ⚙ pill (REQ-S1/REQ-11) opens a two-tier "Ajustes" -> "Calidad" menu —
- * [SettingsMenu] then [QualityMenu] — as modal layers this composable owns
- * via local [menu] state (a pure [PlayerMenu] driven by
- * [PlayerMenuReducer]), rather than forwarding to an external callback.
- * While any panel is open: the outer key handler stops intercepting D-pad
- * input (the panel owns it via normal Compose focus search), the 4s
- * auto-hide is suppressed, and a nested [BackHandler] — composed AFTER the
- * overlay's own, so LIFO makes it win — unwinds exactly one level per press
- * (REQ-S4), restoring focus to the row that opened the closed panel.
- *
- * A THIRD zone, the in-player Info+Up-Next panel (`upnext` package,
- * player-upnext REQ-U1), sits below the pills row. Continuing DOWN from the
- * pills flips local [PlayerOverlay]'s `panelExpanded` state — the panel is
- * CONDITIONALLY composed (design gate correction R1) so a collapsed panel
- * costs nothing and never covers the screen unrequested. Entry reuses the
- * SAME deferred-focus (M2) pattern as [pendingEnterControls]: the panel only
- * exists one frame after the key that expanded it, so focus is requested
- * from a `LaunchedEffect(panelExpanded)`, never inline. BACK collapses the
- * panel back to the pills row (overlay stays Revealed) before it ever
- * collapses the whole overlay (REQ-U8) — see the branch inside the overlay's
- * own [BackHandler] below. The panel is the tracked controls [Column]'s
- * TERMINAL child, so `controlsFocused` stays true while it owns focus and
- * L/R never seeks while browsing (gate R3).
+ * The ⚙ control (REQ-S1/REQ-11) opens a two-tier "Ajustes" → "Calidad" menu —
+ * [SettingsMenu] then [QualityMenu] — as modal layers this composable owns via
+ * local [menu] state (a pure [PlayerMenu] driven by [PlayerMenuReducer]). While
+ * any panel is open the outer key handler stops intercepting D-pad input, the
+ * 4s auto-hide is suppressed, and a nested [BackHandler] composed AFTER the
+ * overlay's own (LIFO makes it win) unwinds exactly one level per press
+ * (REQ-S4), restoring focus to the ⚙ control that opened it.
  */
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -159,12 +159,7 @@ fun PlayerOverlay(
     playbackState: PlaybackState,
     modifier: Modifier = Modifier,
     onPlayPause: () -> Unit = {},
-    onPrevious: () -> Unit = {},
-    onNext: () -> Unit = {},
-    onSeek: (deltaMs: Long) -> Unit = {},
-    onLike: () -> Unit = {},
-    onDislike: () -> Unit = {},
-    onCaptions: () -> Unit = {},
+    onSeekTo: (positionMs: Long) -> Unit = {},
     availableQualities: List<VideoQuality> = emptyList(),
     activeQuality: VideoQuality? = null,
     onSelectQuality: (VideoQuality) -> Unit = {},
@@ -176,7 +171,21 @@ fun PlayerOverlay(
     onPanelOpened: () -> Unit = {},
 ) {
     var overlayState by remember { mutableStateOf<OverlayState>(OverlayState.Hidden) }
-    var controlsFocused by remember { mutableStateOf(false) }
+    // hasFocus of the Column wrapping ALL three revealed zones (scrubber,
+    // controls row, up-next panel) — "some zone owns focus", the gate for
+    // counting D-pad presses as control activity (MAJOR M4).
+    var anyZoneFocused by remember { mutableStateOf(false) }
+    // Distinct from [anyZoneFocused]: tracks whether the TIMELINE SCRUBBER
+    // specifically owns focus, since that is the only state in which L/R scrub
+    // (see [decideDpadAction]).
+    var scrubberFocused by remember { mutableStateOf(false) }
+    // Decoupled scrub (Netflix/Prime/SmartTube model): while the user moves L/R
+    // on the scrubber this accumulates a PREVIEW position only (null = not
+    // scrubbing, so the bar tracks the live position). The engine is NOT touched
+    // per tick — a single seek is committed once scrubbing settles (see the
+    // debounce effect below), so seeking never re-buffers per step and the
+    // timeline moves freely even into not-yet-buffered regions.
+    var scrubPreviewMs by remember { mutableStateOf<Long?>(null) }
     var lastActivityMs by remember { mutableLongStateOf(0L) }
     var pendingEnterControls by remember { mutableStateOf(false) }
     var longPressActive by remember { mutableStateOf(false) }
@@ -184,31 +193,27 @@ fun PlayerOverlay(
     var panelExpanded by remember { mutableStateOf(false) }
     // REQ-U6/design D4: tracks whether the panel CONTAINER itself currently
     // owns focus, distinct from [panelExpanded] (which only flips false on
-    // BACK). UP-from-panel-to-pills leaves [panelExpanded] true but moves
-    // focus away — this is what the auto-hide guard below keys on instead,
-    // so REQ-U6 scenario 2 (focus leaves panel -> auto-hide resumes) holds.
+    // BACK). UP-from-panel-to-controls leaves [panelExpanded] true but moves
+    // focus away — this is what the auto-hide guard below keys on instead.
     var panelFocused by remember { mutableStateOf(false) }
     val neutralFocus = remember { FocusRequester() }
-    val transportFocus = remember { FocusRequester() }
-    val pillsFocus = remember { FocusRequester() }
+    // The single "controls entry" anchor: the play/pause button. Reveal lands
+    // here, UP-from-panel and DOWN-from-scrubber return here.
+    val playPauseFocus = remember { FocusRequester() }
     val settingsFocus = remember { FocusRequester() }
+    val scrubberFocus = remember { FocusRequester() }
     val upNextFocus = remember { FocusRequester() }
-    // Distinct from [upNextFocus] (gate R3, WU-1 note): the panel container
-    // itself carries `upNextFocus`, while this one binds ONLY the
-    // NotAvailable/Offline/Error inline message/Retry anchor inside
-    // `InfoUpNextPanel`. Reusing the SAME instance for both would attach it
-    // to two different focus nodes whenever an error state renders — this
-    // keeps the two roles unambiguous rather than relying on an on-device
-    // check to catch it.
+    // Distinct from [upNextFocus] (gate R3): the panel container itself carries
+    // `upNextFocus`, while this one binds ONLY the NotAvailable/Offline/Error
+    // inline message/Retry anchor inside `InfoUpNextPanel`.
     val upNextContentFocus = remember { FocusRequester() }
     val ajustesFocus = remember { FocusRequester() }
     val menuFocus = remember { FocusRequester() }
     // Gate S3: forward-safe restore hook, currently a no-op passthrough —
-    // FASE-1's Ajustes has exactly one row, so requesting the Ajustes
-    // container (see LaunchedEffect(menu) below) already lands on the sole
-    // Calidad row; wired now for when Ajustes gains more rows.
+    // FASE-1's Ajustes has exactly one row.
     val calidadRowFocus = remember { FocusRequester() }
-    val currentOnSeek by rememberUpdatedState(onSeek)
+    val focusManager = LocalFocusManager.current
+    val currentOnSeekTo by rememberUpdatedState(onSeekTo)
     val currentOnPlayPause by rememberUpdatedState(onPlayPause)
 
     val visible = overlayState is OverlayState.Revealed
@@ -222,24 +227,33 @@ fun PlayerOverlay(
         runCatching { neutralFocus.requestFocus() }
     }
 
-    // MAJOR M2: move focus into the transport row only AFTER it actually
+    // MAJOR M2: land focus on play/pause only AFTER the controls row actually
     // composes (this effect re-runs once `visible` flips to true), instead of
-    // requesting focus inline during the key-event handler.
+    // requesting focus inline during the key-event handler that revealed it.
     LaunchedEffect(visible, pendingEnterControls) {
         if (visible && pendingEnterControls) {
-            runCatching { transportFocus.requestFocus() }
+            runCatching { playPauseFocus.requestFocus() }
             pendingEnterControls = false
         }
     }
 
-    // Gate R2 (player-upnext design gate correction): the Info+Up-Next panel
-    // is CONDITIONALLY composed (only when [panelExpanded]), so a direct
-    // inline `requestFocus()` on the DOWN key that flips it would target a
-    // container that isn't attached yet and silently no-op — same M2
-    // deferred-focus pattern as [pendingEnterControls] above, one frame after
-    // the panel actually composes. [onPanelOpened] triggers the lazy
-    // `UpNextViewModel.ensureLoaded()` (REQ-U3) the FIRST time the panel
-    // opens for the current video; a later re-open reuses the cached state.
+    // Decoupled-scrub COMMIT: once [scrubPreviewMs] stops changing for
+    // [SCRUB_COMMIT_DELAY_MS] (the user settled on a spot), seek ONCE to it and
+    // clear the preview so the scrubber tracks the live position again. Keyed on
+    // [scrubPreviewMs] so every fresh scrub tick RESTARTS the timer — the seek
+    // fires only when scrubbing pauses, never per tick (the whole point: no
+    // re-buffer per step). Setting it back to null re-enters with a no-op.
+    LaunchedEffect(scrubPreviewMs) {
+        val target = scrubPreviewMs ?: return@LaunchedEffect
+        delay(SCRUB_COMMIT_DELAY_MS)
+        currentOnSeekTo(target)
+        scrubPreviewMs = null
+    }
+
+    // Gate R2: the Info+Up-Next panel is CONDITIONALLY composed (only when
+    // [panelExpanded]), so focus into it is deferred one frame — same M2
+    // pattern. [onPanelOpened] triggers the lazy `UpNextViewModel.ensureLoaded()`
+    // (REQ-U3) the FIRST time the panel opens for the current video.
     LaunchedEffect(panelExpanded) {
         if (panelExpanded) {
             onPanelOpened()
@@ -247,36 +261,34 @@ fun PlayerOverlay(
         }
     }
 
-    // MAJOR-5 (design gate #4431) extended to a 3-level menu (REQ-S5): move
-    // focus into the ACTIVE panel's CONTAINER only after it actually
-    // composes — same M2 deferred-focus pattern as [transportFocus] above,
-    // not requested inline during the click that opened it. Closing back to
-    // Closed (BACK, or applying a selection) restores focus to the settings
-    // pill that opened the whole menu.
+    // MAJOR-5 extended to the 3-level menu (REQ-S5): move focus into the ACTIVE
+    // panel's CONTAINER only after it composes, then restore focus to the ⚙
+    // control when the menu closes (BACK, or applying a selection).
+    //
+    // HARDENED (menu-focus regression, Netflix redesign): SettingsMenu/QualityMenu
+    // are CONDITIONALLY composed and added to the tree in the SAME frame `menu`
+    // flips, but their focus node is not necessarily LAID OUT yet when this
+    // effect's coroutine first runs — a bare `requestFocus()` then throws "not
+    // initialized", `runCatching` swallows it, and the popup opens UNFOCUSED and
+    // un-navigable. [requestFocusDeferred] waits for the next frame(s) so the
+    // just-composed panel is attached and laid out before requesting, which is
+    // the deferred-focus (M2) contract these menus' KDoc already assumes.
     LaunchedEffect(menu) {
         when (menu) {
-            PlayerMenu.Ajustes -> runCatching { ajustesFocus.requestFocus() }
-            PlayerMenu.Calidad -> runCatching { menuFocus.requestFocus() }
-            PlayerMenu.Closed -> runCatching { settingsFocus.requestFocus() }
+            PlayerMenu.Ajustes -> enterMenuFocus(focusManager, ajustesFocus)
+            PlayerMenu.Calidad -> enterMenuFocus(focusManager, menuFocus)
+            PlayerMenu.Closed -> {
+                withFrameNanos { }
+                runCatching { settingsFocus.requestFocus() }
+            }
         }
     }
 
-    // 4s auto-hide (REQ-11), reset by ANY control activity (MAJOR M4) — not
-    // just the key event that first revealed the overlay. Keyed on
-    // [lastActivityMs] rather than [overlayState] so in-row focus movement
-    // and button clicks (which call [registerActivity]) restart the timer.
-    // Also keyed/guarded on [menu] (minor fix, #4431; widened to the 3-level
-    // menu for REQ-S5): collapsing the controls behind an open Ajustes or
-    // Calidad panel would strand its focus, so auto-hide is fully
-    // suppressed while ANY settings panel is open. Widened again (REQ-U6,
-    // fixed post-verify WARNING-1) for [panelFocused] rather than
-    // [panelExpanded]: browsing the Info+Up-Next panel is also NOT
-    // inactivity, but the panel stays `panelExpanded` until BACK — keying on
-    // expansion would strand the suppression even after UP moves focus back
-    // to the pills row. [panelFocused] tracks the panel container's actual
-    // focus (design D4), so leaving it back to the pills re-triggers this
-    // effect and re-arms the 4s window from that moment, same mechanism
-    // [menu] already relies on.
+    // 4s auto-hide (REQ-11/REQ-S4), reset by ANY control activity (MAJOR M4).
+    // Keyed on [lastActivityMs] so in-zone focus movement and button clicks
+    // (which call [registerActivity]) restart the timer. Suppressed while any
+    // settings panel is open ([menu]) or the up-next panel owns focus
+    // ([panelFocused], design D4) — browsing those is not inactivity.
     LaunchedEffect(lastActivityMs, menu, panelFocused) {
         if (menu != PlayerMenu.Closed || panelFocused) return@LaunchedEffect
         val revealed = overlayState as? OverlayState.Revealed ?: return@LaunchedEffect
@@ -284,27 +296,22 @@ fun PlayerOverlay(
         val next = OverlayReducer.onInactivityTimeout(revealed, nowMs = revealed.sinceMs + OverlayReducer.AUTO_HIDE_TIMEOUT_MS)
         if (next is OverlayState.Hidden) {
             overlayState = next
-            // Fresh reveal should start clean — a still-expanded-but-hidden
-            // panel would be a ghost state. [panelFocused] follows to false
-            // on its own next frame once the container loses focus.
+            // Fresh reveal should start clean — collapse a still-expanded panel.
             panelExpanded = false
             runCatching { neutralFocus.requestFocus() }
         }
     }
 
-    // BACK unwinds exactly one level per press (REQ-U8). While the
-    // Info+Up-Next panel owns focus, BACK collapses ONLY the panel back to
-    // the pills row — the overlay stays Revealed. Only once the panel is
-    // already closed does BACK collapse the WHOLE overlay to Hidden; from
-    // there BACK falls through to whatever the caller wires (pop to Home).
-    // No new BackHandler: the menu's own `BackHandler(enabled = menu !=
-    // Closed)` below is composed LAST, so LIFO still makes it win over this
-    // one whenever Ajustes/Calidad is open (REQ-U8 branch 1, unchanged) —
-    // the panel and the settings menu are never reachable/focused at once.
+    // BACK unwinds exactly one level per press (REQ-U8). While the up-next panel
+    // is expanded, BACK collapses ONLY the panel back to the controls row — the
+    // overlay stays Revealed. Only once the panel is closed does BACK collapse
+    // the WHOLE overlay to Hidden; from there BACK falls through to the caller
+    // (pop to Home). The menu's own `BackHandler` below is composed LAST, so
+    // LIFO makes it win whenever Ajustes/Calidad is open.
     BackHandler(enabled = visible) {
         if (panelExpanded) {
             panelExpanded = false
-            runCatching { pillsFocus.requestFocus() }
+            runCatching { playPauseFocus.requestFocus() }
         } else {
             overlayState = OverlayState.Hidden
             runCatching { neutralFocus.requestFocus() }
@@ -315,31 +322,25 @@ fun PlayerOverlay(
         modifier = modifier
             .fillMaxSize()
             .onPreviewKeyEvent { keyEvent ->
-                // minor fix (#4431; widened to the 3-level menu for REQ-S5):
-                // while any settings panel (Ajustes or Calidad) is open it
-                // owns ALL D-pad input via normal Compose focus search — the
-                // reveal-then-seek gesture and pills/transport navigation
-                // below must not intercept keys meant for the panel's rows.
+                // While any settings panel (Ajustes or Calidad) is open it owns
+                // ALL D-pad input via normal Compose focus search — do not
+                // intercept keys meant for the panel's rows.
                 if (menu != PlayerMenu.Closed) return@onPreviewKeyEvent false
 
                 val repeatCount = keyEvent.nativeKeyEvent.repeatCount
                 // MAJOR M3: Android's KeyUp.repeatCount is ALWAYS 0, so the
-                // held-vs-tap distinction must be tracked ourselves across
-                // the KeyDown/KeyUp pair — reset at the start of a fresh press.
+                // held-vs-tap distinction is tracked ourselves across the
+                // KeyDown/KeyUp pair — reset at the start of a fresh press.
                 if (keyEvent.type == KeyEventType.KeyDown && repeatCount == 0) {
                     longPressActive = false
                 }
 
-                // MAJOR M4 (round 2): navigating BETWEEN buttons/rows with the
-                // D-pad while a control already owns focus never reached
-                // registerActivity() before — only onClick and the Column's
-                // onFocusChanged (which fires once, when the Column itself
-                // gains focus, not on every row-to-row move) did. Browsing the
-                // controls without clicking anything IS activity (REQ-11), so
-                // register it here and still let Compose perform its own
-                // focus move (decideDpadAction always resolves to Ignore -> false
-                // while controlsFocused, so this never double-handles the key).
-                if (controlsFocused && keyEvent.type == KeyEventType.KeyDown && isDpadNavigationKey(keyEvent.key)) {
+                // MAJOR M4: navigating BETWEEN zones/controls with the D-pad
+                // while a zone already owns focus IS activity (REQ-11), so
+                // register it here and still let Compose perform its own focus
+                // move (decideDpadAction resolves to Ignore -> false whenever the
+                // scrubber is not focused, so this never double-handles the key).
+                if (anyZoneFocused && keyEvent.type == KeyEventType.KeyDown && isDpadKey(keyEvent.key)) {
                     registerActivity()
                 }
 
@@ -348,7 +349,7 @@ fun PlayerOverlay(
                     type = keyEvent.type,
                     repeatCount = repeatCount,
                     longPressActive = longPressActive,
-                    controlsFocused = controlsFocused,
+                    scrubberFocused = scrubberFocused,
                     overlayState = overlayState,
                 )
 
@@ -363,20 +364,22 @@ fun PlayerOverlay(
 
                     DpadAction.Reveal -> {
                         registerActivity()
+                        // Land focus on play/pause once the controls row composes.
+                        pendingEnterControls = true
                         true
                     }
 
                     is DpadAction.Seek -> {
-                        // REQ-L7: pure-live has no scrubbing — L/R still keeps the
-                        // overlay alive (registerActivity) but never seeks.
-                        if (!isLive) currentOnSeek(action.deltaMs)
+                        // Decoupled scrub: move the PREVIEW cursor only, never the
+                        // engine per tick (the debounce effect commits ONE seek on
+                        // settle). REQ-L7: live has no scrubbing — the scrubber is
+                        // never focusable there, so this is unreachable in live.
+                        if (!isLive) {
+                            val duration = playbackState.durationMs.coerceAtLeast(0L)
+                            val base = scrubPreviewMs ?: playbackState.positionMs
+                            scrubPreviewMs = (base + action.deltaMs).coerceIn(0L, duration)
+                        }
                         registerActivity()
-                        true
-                    }
-
-                    DpadAction.EnterControls -> {
-                        registerActivity()
-                        pendingEnterControls = true
                         true
                     }
 
@@ -389,7 +392,7 @@ fun PlayerOverlay(
             },
     ) {
         // Invisible: only exists so a D-pad key event has somewhere to land
-        // before any control row is composed (overlay starts Hidden).
+        // before any zone is composed (overlay starts Hidden).
         Box(modifier = Modifier.size(0.dp).focusRequester(neutralFocus).focusable())
 
         TitleLabel(title = title, modifier = Modifier.align(Alignment.TopStart))
@@ -408,8 +411,8 @@ fun PlayerOverlay(
                     )
                     .padding(horizontal = 40.dp, vertical = 24.dp)
                     .onFocusChanged {
-                        controlsFocused = it.hasFocus
-                        // MAJOR M4: entering the control rows also counts as activity.
+                        anyZoneFocused = it.hasFocus
+                        // MAJOR M4: entering any zone also counts as activity.
                         if (it.hasFocus) registerActivity()
                     },
                 verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -417,43 +420,34 @@ fun PlayerOverlay(
                 if (isLive) {
                     LiveIndicator()
                 } else {
-                    Scrubber(positionMs = playbackState.positionMs, durationMs = playbackState.durationMs)
+                    Scrubber(
+                        // Show the decoupled preview cursor while scrubbing; fall
+                        // back to the live position when settled.
+                        positionMs = scrubPreviewMs ?: playbackState.positionMs,
+                        durationMs = playbackState.durationMs,
+                        scrubbing = scrubPreviewMs != null,
+                        focusRequester = scrubberFocus,
+                        downFocus = playPauseFocus,
+                        onFocusChanged = { scrubberFocused = it },
+                    )
                 }
 
-                TransportRow(
+                ControlsRow(
                     isPlaying = playbackState.isPlaying,
-                    focusRequester = transportFocus,
-                    downFocus = pillsFocus,
-                    onPrevious = { registerActivity(); onPrevious() },
+                    playPauseFocusRequester = playPauseFocus,
+                    settingsFocusRequester = settingsFocus,
+                    // UP from the controls returns to the scrubber; live has no
+                    // scrubber, so UP is contained there.
+                    upFocus = if (isLive) FocusRequester.Cancel else scrubberFocus,
+                    qualityLabel = activeQuality?.label ?: "Automática",
                     onPlayPause = { registerActivity(); onPlayPause() },
-                    onNext = { registerActivity(); onNext() },
+                    onSettings = { registerActivity(); menu = PlayerMenuReducer.open(menu) },
+                    onEnterPanel = { registerActivity(); panelExpanded = true },
                 )
 
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    PillsRow(
-                        focusRequester = pillsFocus,
-                        upFocus = transportFocus,
-                        settingsFocusRequester = settingsFocus,
-                        onLike = { registerActivity(); onLike() },
-                        onDislike = { registerActivity(); onDislike() },
-                        onCaptions = { registerActivity(); onCaptions() },
-                        onSettings = { registerActivity(); menu = PlayerMenuReducer.open(menu) },
-                        onEnterPanel = { registerActivity(); panelExpanded = true },
-                    )
-                    QualityBadge(label = activeQuality?.label ?: "Automática")
-                }
-
-                // REQ-U1/gate R1/R3: TERMINAL child of the tracked controls
-                // Column — CONDITIONALLY composed so a collapsed panel costs
-                // nothing and never covers the screen unrequested (design
-                // gate correction). Living inside this Column (rather than a
-                // separate BottomEnd surface like Ajustes/Calidad) keeps
-                // `controlsFocused` true while the panel owns focus, so L/R
-                // keeps falling through to Compose's normal focus search
-                // (horizontal rail nav) instead of re-arming reveal-then-seek.
+                // REQ-U1/gate R1/R3: TERMINAL child of the tracked zone Column —
+                // CONDITIONALLY composed so a collapsed panel costs nothing and
+                // never covers the screen unrequested.
                 if (panelExpanded) {
                     InfoUpNextPanel(
                         state = upNextState,
@@ -462,20 +456,14 @@ fun PlayerOverlay(
                         contentFocusRequester = upNextContentFocus,
                         modifier = Modifier
                             .heightIn(max = (LocalConfiguration.current.screenHeightDp * 0.5).dp)
-                            // REQ-U6/design D4: observes the panel container's
-                            // OWN focus state (bubbles up from whatever child
-                            // — description Box, retry, related card — holds
-                            // it), independent of [panelExpanded]. Placed
-                            // BEFORE focusRequester/focusProperties/focusGroup
-                            // so it wraps the whole focus group, same as the
-                            // description Box's own onFocusChanged below.
+                            // REQ-U6/design D4: observes the panel container's OWN
+                            // focus state, independent of [panelExpanded].
                             .onFocusChanged { panelFocused = it.hasFocus }
                             .focusRequester(upNextFocus)
                             .focusProperties {
-                                up = pillsFocus
-                                // Terminal boundary (REQ-U1): DOWN is guarded
-                                // here too, same shape as PillsRow's own exit
-                                // below — no further nav, no trap.
+                                up = playPauseFocus
+                                // Terminal boundary (REQ-U1): DOWN is guarded here
+                                // too — no further nav, no trap.
                                 @Suppress("DEPRECATION")
                                 exit = { direction -> if (direction == FocusDirection.Down) FocusRequester.Cancel else FocusRequester.Default }
                             }
@@ -487,9 +475,6 @@ fun PlayerOverlay(
         }
 
         if (menu is PlayerMenu.Ajustes) {
-            // Gate R1: pins the Ajustes anchor to the SAME clear-of-control-
-            // band value as Calidad below, so the FIRST panel ⚙ opens is
-            // provably clear of the scrubber/transport/pills band.
             SettingsMenu(
                 activeQualityLabel = activeQuality?.label,
                 ajustesFocusRequester = ajustesFocus,
@@ -506,8 +491,7 @@ fun PlayerOverlay(
                 availableQualities = availableQualities,
                 activeQuality = activeQuality,
                 menuFocusRequester = menuFocus,
-                // REQ-S3: a resolution/Automática pick closes the ENTIRE
-                // menu back to the player, not just Calidad.
+                // REQ-S3: a resolution/Automática pick closes the ENTIRE menu.
                 onSelectQuality = { quality -> onSelectQuality(quality); menu = PlayerMenuReducer.selectResolution(menu) },
                 onSelectAuto = { onSelectAuto(); menu = PlayerMenuReducer.selectResolution(menu) },
                 modifier = Modifier
@@ -516,11 +500,9 @@ fun PlayerOverlay(
             )
         }
 
-        // minor fix (#4431; widened to the 3-level menu for REQ-S4):
-        // composed LAST so LIFO makes THIS handler win over the overlay's
-        // own `BackHandler` above while any settings panel is open — BACK
-        // unwinds exactly one level per press via the pure reducer, never
-        // pops the player while a panel is open.
+        // Composed LAST so LIFO makes THIS handler win over the overlay's own
+        // `BackHandler` above while any settings panel is open — BACK unwinds
+        // exactly one level per press via the pure reducer.
         BackHandler(enabled = menu != PlayerMenu.Closed) {
             menu = PlayerMenuReducer.back(menu)
         }
@@ -528,17 +510,28 @@ fun PlayerOverlay(
 }
 
 /**
- * D-pad direction/center keys count as control activity (MAJOR M4, round 2)
- * regardless of what [decideDpadAction] resolves them to. Compose glue only —
- * no pure decision to unit-test here, same integration-only convention as the
- * rest of this composable's key/focus handling.
+ * Move focus INTO a just-opened settings/quality popup.
+ *
+ * On-device evidence (TCL 55C6K, logcat): when the ⚙ control owned focus, a bare
+ * `target.requestFocus()` reported success but focus never actually left the ⚙ —
+ * it lives inside the controls `focusGroup()` whose `exit = Cancel` holds focus
+ * in the zone, and a plain programmatic request cannot pull focus out. The same
+ * request DOES work at startup, when focus sits at the unfocused root. So the fix
+ * is to RETURN to that state first: [FocusManager.clearFocus] with `force = true`
+ * overrides the group containment and releases the ⚙, and only then can the popup
+ * be focused.
+ *
+ * The popup is composed in the SAME frame `menu` flips, so its focus node may not
+ * be attached/laid out yet — request across a few consecutive frames (a no-op
+ * once it lands) to ride out layout lag, the deferred-focus (M2) contract these
+ * menus' KDoc already assumes.
  */
-private fun isDpadNavigationKey(key: Key): Boolean = when (key) {
-    Key.DirectionLeft, Key.DirectionRight, Key.DirectionUp, Key.DirectionDown,
-    Key.DirectionCenter, Key.Enter,
-    -> true
-
-    else -> false
+private suspend fun enterMenuFocus(focusManager: FocusManager, target: FocusRequester, frames: Int = 4) {
+    focusManager.clearFocus(force = true)
+    repeat(frames) {
+        withFrameNanos { }
+        runCatching { target.requestFocus() }
+    }
 }
 
 @Composable
@@ -579,36 +572,89 @@ private fun BufferingSpinner(modifier: Modifier = Modifier) {
     }
 }
 
+/**
+ * FOCUSABLE timeline scrubber (top zone). LEFT/RIGHT scrubbing and OK are
+ * handled by the overlay's global key handler ([decideDpadAction]) while this
+ * owns focus; here the modifier only wires the focus node and a distinct
+ * focused visual (taller track + a thumb + brighter time label) so a D-pad user
+ * can SEE the timeline is active. Focus containment: DOWN → the controls row
+ * ([downFocus]); UP/LEFT/RIGHT are cancelled so focus never escapes the zone
+ * (LEFT/RIGHT are consumed as seeks upstream and never reach focus search — the
+ * cancels are belt-and-suspenders).
+ */
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
-private fun Scrubber(positionMs: Long, durationMs: Long, modifier: Modifier = Modifier) {
+private fun Scrubber(
+    positionMs: Long,
+    durationMs: Long,
+    scrubbing: Boolean,
+    focusRequester: FocusRequester,
+    downFocus: FocusRequester,
+    onFocusChanged: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val fraction = if (durationMs > 0) (positionMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f) else 0f
-    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(4.dp)
-                .background(OnDarkMuted.copy(alpha = 0.3f), RoundedCornerShape(2.dp)),
+    var focused by remember { mutableStateOf(false) }
+    // "active" = the scrubber owns focus OR is mid-scrub. Mid-scrub keeps the
+    // thumb + brighter time visible even across frames where focus briefly
+    // flickers, so the moving preview cursor is always legible.
+    val active = focused || scrubbing
+    val trackHeight = if (active) 6.dp else 4.dp
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .onFocusChanged {
+                focused = it.isFocused
+                onFocusChanged(it.isFocused)
+            }
+            .focusRequester(focusRequester)
+            .focusProperties {
+                down = downFocus
+                up = FocusRequester.Cancel
+                left = FocusRequester.Cancel
+                right = FocusRequester.Cancel
+            }
+            .focusable(),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        BoxWithConstraints(
+            modifier = Modifier.fillMaxWidth().height(16.dp),
+            contentAlignment = Alignment.CenterStart,
         ) {
+            val fullWidth = maxWidth
             Box(
                 modifier = Modifier
-                    .fillMaxWidth(fraction)
-                    .height(4.dp)
+                    .fillMaxWidth()
+                    .height(trackHeight)
+                    .background(OnDarkMuted.copy(alpha = 0.3f), RoundedCornerShape(2.dp)),
+            )
+            Box(
+                modifier = Modifier
+                    .width(fullWidth * fraction)
+                    .height(trackHeight)
                     .background(YouTrocRed, RoundedCornerShape(2.dp)),
             )
+            if (active) {
+                Box(
+                    modifier = Modifier
+                        .offset(x = (fullWidth * fraction - 7.dp).coerceAtLeast(0.dp))
+                        .size(14.dp)
+                        .background(OnDark, CircleShape),
+                )
+            }
         }
         Text(
             text = "${PlaybackTimeFormatter.format(positionMs)} / ${PlaybackTimeFormatter.format(durationMs)}",
-            color = OnDarkMuted,
+            color = if (active) OnDark else OnDarkMuted,
             style = MaterialTheme.typography.labelMedium,
         )
     }
 }
 
 /**
- * Pure-live replacement for [Scrubber] (REQ-L6/REQ-L7): a full-width bar
- * snapped to the live edge (fraction = 1f, no position/duration progress)
- * plus a red "EN VIVO" pill. Deliberately non-focusable — no `.focusable()`
- * modifier — so it never traps D-pad focus.
+ * Pure-live replacement for [Scrubber] (REQ-L6/REQ-L7): a full-width bar snapped
+ * to the live edge plus a red "EN VIVO" pill. Deliberately non-focusable — no
+ * `.focusable()` modifier — so it never traps D-pad focus.
  */
 @Composable
 private fun LiveIndicator(modifier: Modifier = Modifier) {
@@ -629,91 +675,73 @@ private fun LiveIndicator(modifier: Modifier = Modifier) {
     }
 }
 
+/**
+ * The controls zone: exactly TWO focusable controls — play/pause and ⚙ settings
+ * — plus a non-focusable quality badge. The inner Row is a `focusGroup` whose
+ * `exit` CONTAINS horizontal focus: LEFT on play/pause and RIGHT on ⚙ are
+ * cancelled so focus never escapes the overlay (the fix for the old transport
+ * row's LEFT-exits-player bug). UP leaves to [upFocus] (the scrubber, or cancel
+ * for live); DOWN opens the up-next panel via [onEnterPanel] then cancels this
+ * frame — the caller's deferred `LaunchedEffect(panelExpanded)` lands focus in
+ * the panel one frame later.
+ */
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-private fun TransportRow(
+private fun ControlsRow(
     isPlaying: Boolean,
-    focusRequester: FocusRequester,
-    downFocus: FocusRequester,
-    onPrevious: () -> Unit,
+    playPauseFocusRequester: FocusRequester,
+    settingsFocusRequester: FocusRequester,
+    upFocus: FocusRequester,
+    qualityLabel: String,
     onPlayPause: () -> Unit,
-    onNext: () -> Unit,
+    onSettings: () -> Unit,
+    onEnterPanel: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = modifier
-            .focusProperties {
-                down = downFocus
-                @Suppress("DEPRECATION")
-                exit = { direction -> if (direction == FocusDirection.Up) FocusRequester.Cancel else FocusRequester.Default }
-            }
-            .focusGroup(),
+        modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        ControlButton(icon = Icons.Default.SkipPrevious, contentDescription = "Anterior", onClick = onPrevious)
-        ControlButton(
-            icon = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-            contentDescription = if (isPlaying) "Pausar" else "Reproducir",
-            onClick = onPlayPause,
-            modifier = Modifier.focusRequester(focusRequester),
-        )
-        ControlButton(icon = Icons.Default.SkipNext, contentDescription = "Siguiente", onClick = onNext)
-    }
-}
-
-@OptIn(ExperimentalComposeUiApi::class)
-@Composable
-private fun PillsRow(
-    focusRequester: FocusRequester,
-    upFocus: FocusRequester,
-    settingsFocusRequester: FocusRequester,
-    onLike: () -> Unit,
-    onDislike: () -> Unit,
-    onCaptions: () -> Unit,
-    onSettings: () -> Unit,
-    onEnterPanel: () -> Unit = {},
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier
-            .focusRequester(focusRequester)
-            .focusProperties {
-                up = upFocus
-                // REQ-U1/gate R1: DOWN no longer traps focus here — it fires
-                // [onEnterPanel] (flips `panelExpanded` at the call site) and
-                // CANCELS for this frame only, since the panel isn't
-                // composed yet. The caller's deferred
-                // `LaunchedEffect(panelExpanded)` moves focus into it one
-                // frame later (gate R2), the same M2 pattern already used to
-                // enter the transport row.
-                @Suppress("DEPRECATION")
-                exit = { direction ->
-                    if (direction == FocusDirection.Down) {
-                        onEnterPanel()
-                        FocusRequester.Cancel
-                    } else {
-                        FocusRequester.Default
+        Row(
+            modifier = Modifier
+                .focusProperties {
+                    @Suppress("DEPRECATION")
+                    exit = { direction ->
+                        when (direction) {
+                            FocusDirection.Up -> upFocus
+                            FocusDirection.Down -> {
+                                onEnterPanel()
+                                FocusRequester.Cancel
+                            }
+                            // LEFT/RIGHT at the group boundary: contained.
+                            else -> FocusRequester.Cancel
+                        }
                     }
                 }
-            }
-            .focusGroup(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        ControlButton(icon = Icons.Default.ThumbUp, contentDescription = "Me gusta", onClick = onLike, small = true)
-        ControlButton(icon = Icons.Default.ThumbDown, contentDescription = "No me gusta", onClick = onDislike, small = true)
-        ControlButton(icon = Icons.Default.ClosedCaption, contentDescription = "Subtítulos", onClick = onCaptions, small = true)
-        ControlButton(
-            icon = Icons.Default.Settings,
-            contentDescription = "Ajustes",
-            onClick = onSettings,
-            small = true,
-            modifier = Modifier.focusRequester(settingsFocusRequester),
-        )
+                .focusGroup(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            ControlButton(
+                icon = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                contentDescription = if (isPlaying) "Pausar" else "Reproducir",
+                onClick = onPlayPause,
+                modifier = Modifier.focusRequester(playPauseFocusRequester),
+            )
+            ControlButton(
+                icon = Icons.Default.Settings,
+                contentDescription = "Ajustes",
+                onClick = onSettings,
+                small = true,
+                modifier = Modifier.focusRequester(settingsFocusRequester),
+            )
+        }
+        QualityBadge(label = qualityLabel)
     }
 }
 
-/** Small non-focusable "Calidad" indicator next to the pills (REQ-Q2): the active pick, or "Automática". */
+/** Small non-focusable "Calidad" indicator next to the controls (REQ-Q2): the active pick, or "Automática". */
 @Composable
 private fun QualityBadge(label: String, modifier: Modifier = Modifier) {
     Box(

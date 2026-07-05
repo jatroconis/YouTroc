@@ -124,16 +124,17 @@ class PlaybackViewModelTest {
     }
 
     @Test
-    fun `seekBy clamps within the video bounds`() = runTest {
+    fun `seekTo clamps the absolute target within the video bounds`() = runTest {
         val player = FakeMediaPlayer()
         val store = FakeWatchProgressStore()
         val viewModel = PlaybackViewModel(player, store, videoId, appScope)
         viewModel.start(manifest)
         player.emitReady(durationMs = 200_000L, positionMs = 5_000L)
 
-        viewModel.seekBy(-30_000L)
+        viewModel.seekTo(250_000L) // absolute, past the end -> clamped to duration (NOT position-relative)
+        viewModel.seekTo(-1_000L) // absolute, before the start -> clamped to 0
 
-        assertEquals(listOf(0L), player.seekedTo)
+        assertEquals(listOf(200_000L, 0L), player.seekedTo)
     }
 
     @Test

@@ -45,18 +45,20 @@ import com.youtroc.core.ui.theme.YouTrocRed
  * Focus containment (design gate #4431 MAJOR-5, the #1 risk for REQ-Q7): the
  * row [Column] is a SINGLE `focusGroup()` container with [focusProperties]
  * cancelling every exit direction, so UP-past-first / DOWN-past-last stays
- * inside the menu instead of escaping to the transport/pills rows composed
+ * inside the menu instead of escaping to the scrubber/controls rows composed
  * behind it — the same container-level containment already proven by
- * `HomeContent`/`TransportRow`/`PillsRow` in this codebase (item-level focus
- * anchors were the mistake flagged by gate reviews #4399/#4419). The only way
+ * `HomeContent` and `PlayerOverlay`'s own zone rows in this codebase
+ * (item-level focus anchors were the mistake flagged by gate reviews
+ * #4399/#4419). The only way
  * out is BACK, handled by `PlayerOverlay`'s nested `BackHandler`, not focus
  * search.
  *
- * [menuFocusRequester] is attached to this CONTAINER — never a lazy row
- * item — and is requested from `PlayerOverlay` one frame after the menu
- * actually composes (`LaunchedEffect(menuVisible)`, the same deferred-focus
- * pattern used across this feature), never inline during the click/key event
- * that opened it.
+ * [menuFocusRequester] is attached to the FIRST row's focusable Surface (the
+ * concrete focus target — this container's own `requestFocus` did not reliably
+ * delegate into its children on-device) and is requested from `PlayerOverlay`'s
+ * `enterMenuFocus` (clear-focus-then-request, deferred across frames) once the
+ * menu actually composes, never inline during the click/key event that opened
+ * it.
  *
  * Integration-only: Compose focus/D-pad behavior is validated on the TCL
  * 55C6K, the same convention as `PlayerOverlay`/`Media3MediaPlayer`.
@@ -86,7 +88,6 @@ fun QualityMenu(
             .heightIn(max = (LocalConfiguration.current.screenHeightDp * 0.45).dp)
             .background(Color.Black.copy(alpha = 0.9f), RoundedCornerShape(12.dp))
             .padding(16.dp)
-            .focusRequester(menuFocusRequester)
             .focusProperties {
                 // MAJOR-5 (#4431): never let focus escape the menu via D-pad
                 // in ANY direction — the only exit is BACK.
@@ -102,10 +103,13 @@ fun QualityMenu(
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Text(text = "Calidad", color = OnDark, style = MaterialTheme.typography.titleMedium)
-        rows.forEach { row ->
+        rows.forEachIndexed { index, row ->
             QualityMenuRowItem(
                 row = row,
                 onClick = { if (row.quality == null) onSelectAuto() else onSelectQuality(row.quality) },
+                // Focus the FIRST row's concrete focusable Surface directly (not the
+                // focusGroup container, whose requestFocus doesn't reliably delegate).
+                modifier = if (index == 0) Modifier.focusRequester(menuFocusRequester) else Modifier,
             )
         }
     }

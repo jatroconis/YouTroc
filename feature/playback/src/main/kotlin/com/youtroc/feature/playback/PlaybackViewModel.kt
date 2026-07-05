@@ -75,12 +75,16 @@ class PlaybackViewModel(
         if (playbackState.value.isPlaying) pause() else player.play()
     }
 
-    /** Seeks by [deltaMs] (negative = backward), clamped to `[0, duration]`. */
-    fun seekBy(deltaMs: Long) {
-        val current = playbackState.value
-        val duration = current.durationMs.coerceAtLeast(0L)
-        val target = (current.positionMs + deltaMs).coerceIn(0L, duration)
-        player.seekTo(target)
+    /**
+     * Seeks to the ABSOLUTE [positionMs], clamped to `[0, duration]`. This is
+     * the commit path for the overlay's decoupled scrub: the scrubber moves a
+     * preview cursor freely without touching the engine, then commits a single
+     * seek here once the user settles — instead of seeking on every D-pad tick,
+     * which re-buffered per step and stalled the timeline.
+     */
+    fun seekTo(positionMs: Long) {
+        val duration = playbackState.value.durationMs.coerceAtLeast(0L)
+        player.seekTo(positionMs.coerceIn(0L, duration))
     }
 
     /**
