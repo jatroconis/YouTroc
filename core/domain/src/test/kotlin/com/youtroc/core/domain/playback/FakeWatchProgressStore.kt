@@ -9,11 +9,26 @@ import com.youtroc.core.domain.video.VideoId
  */
 class FakeWatchProgressStore : WatchProgressStore {
 
-    private val saved = mutableMapOf<VideoId, Pair<PlaybackPosition, Long>>()
+    private val saved = mutableMapOf<VideoId, WatchHistoryEntry>()
 
-    override suspend fun save(videoId: VideoId, position: PlaybackPosition, durationMs: Long) {
-        saved[videoId] = position to durationMs
+    override suspend fun save(
+        videoId: VideoId,
+        position: PlaybackPosition,
+        durationMs: Long,
+        title: String,
+        channel: String,
+    ) {
+        saved[videoId] = WatchHistoryEntry(
+            videoId = videoId,
+            title = title,
+            channel = channel,
+            watchedAt = System.currentTimeMillis(),
+            position = position,
+            durationMs = durationMs,
+        )
     }
 
-    override suspend fun load(videoId: VideoId): PlaybackPosition? = saved[videoId]?.first
+    override suspend fun load(videoId: VideoId): PlaybackPosition? = saved[videoId]?.position
+
+    override suspend fun readAll(): List<WatchHistoryEntry> = saved.values.sortedByDescending { it.watchedAt }
 }

@@ -51,4 +51,14 @@ class InnerTubeSearchRequestTest {
 
         assertEquals(query, decoded.query)
     }
+
+    @Test
+    fun `passes through a non-null params as the request's params field`() {
+        assertEquals("EgJAAQ==", buildSearchRequest("en vivo", regionCode = null, params = "EgJAAQ==").params)
+    }
+
+    @Test
+    fun `omits params when null`() {
+        assertNull(buildSearchRequest("lofi", regionCode = null, params = null).params)
+    }
 }

@@ -75,11 +75,12 @@ class FakeMediaPlayer : MediaPlayer {
     }
 
     /** Test helper: simulates the engine reporting readiness with a known duration. */
-    fun emitReady(durationMs: Long, positionMs: Long = 0L) {
+    fun emitReady(durationMs: Long, positionMs: Long = 0L, isLive: Boolean = false) {
         mutableState.value = mutableState.value.copy(
             phase = PlaybackState.Phase.Ready,
             positionMs = positionMs,
             durationMs = durationMs,
+            isLive = isLive,
         )
     }
 

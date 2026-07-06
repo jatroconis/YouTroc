@@ -1,5 +1,6 @@
 package com.youtroc.feature.catalog
 
+import com.youtroc.core.domain.catalog.ShelfId
 import com.youtroc.core.ui.component.VideoCardUi
 
 /**
@@ -26,8 +27,9 @@ sealed interface HomeUiState {
     data object Error : HomeUiState
 }
 
-/** A titled shelf of presentation-ready [VideoCardUi]s. */
+/** A titled shelf of presentation-ready [VideoCardUi]s, tagged with its domain [ShelfId]. */
 data class HomeShelf(
+    val id: ShelfId,
     val title: String,
     val videos: List<VideoCardUi>,
 )

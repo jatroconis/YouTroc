@@ -2,6 +2,7 @@ package com.youtroc.data.extraction.catalog
 
 import com.youtroc.core.domain.catalog.CatalogResult
 import com.youtroc.core.domain.catalog.Shelf
+import com.youtroc.core.domain.catalog.ShelfId
 import com.youtroc.core.domain.catalog.VideoCatalog
 import com.youtroc.data.extraction.NewPipeBootstrap
 import kotlinx.coroutines.Dispatchers
@@ -50,7 +51,10 @@ class NewPipeVideoCatalog(
             if (videos.isEmpty()) {
                 CatalogResult.Empty
             } else {
-                CatalogResult.Success(listOf(Shelf(title = extractor.name, videos = videos)))
+                // Placeholder id: this class only ever seeds the Tendencias shelf today.
+                // ComposeHomeFeed re-tags it via `.copy(id = source.id)` once wrapped by a
+                // ShelfSource (F3), so this value is never actually observed downstream.
+                CatalogResult.Success(listOf(Shelf(id = ShelfId.TENDENCIAS, title = extractor.name, videos = videos)))
             }
         } catch (e: CancellationException) {
             throw e // never swallow cooperative cancellation

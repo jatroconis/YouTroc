@@ -1,12 +1,15 @@
 package com.youtroc.feature.catalog
 
 import com.youtroc.core.domain.catalog.CatalogResult
-import com.youtroc.core.domain.catalog.GetHomeFeed
+import com.youtroc.core.domain.catalog.ComposeHomeFeed
 import com.youtroc.core.domain.catalog.Shelf
+import com.youtroc.core.domain.catalog.ShelfId
+import com.youtroc.core.domain.catalog.ShelfSource
 import com.youtroc.core.domain.catalog.Video
 import com.youtroc.core.domain.video.VideoId
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.resetMain
@@ -19,13 +22,12 @@ import kotlin.test.assertEquals
 
 /**
  * Exercises [HomeViewModel]'s state mapping end-to-end through a REAL
- * [GetHomeFeed] wrapping the local fake [FakeVideoCatalog] — never a faked
- * `GetHomeFeed` itself, since the use case is `final` and part of what this
- * suite verifies (mirrors [com.youtroc.feature.playback.PlaybackViewModelTest]).
+ * [ComposeHomeFeed] wrapping fake [ShelfSource]s -- never a faked
+ * `ComposeHomeFeed` itself, mirroring [com.youtroc.feature.playback.PlaybackViewModelTest].
  *
  * Uses its own [StandardTestDispatcher] (not Unconfined) for `Dispatchers.Main`
  * so the transient `Loading` state is actually observable before the feed
- * resolves — mirrors the separately-scheduled `appScope` dispatcher already
+ * resolves -- mirrors the separately-scheduled `appScope` dispatcher already
  * used by `PlaybackViewModelTest`.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -52,9 +54,20 @@ class HomeViewModelTest {
         publishedText = "hace 15 a.",
     )
 
+    /** A single-source [ShelfSource] whose [load] answers a fixed [CatalogResult] after a 1ms suspension. */
+    private fun sourceOf(id: ShelfId, result: CatalogResult): ShelfSource = object : ShelfSource {
+        override val id: ShelfId = id
+        override val displayTitle: String? = null
+        override val timeoutMs: Long = 10_000L
+        override suspend fun load(): CatalogResult {
+            delay(1)
+            return result
+        }
+    }
+
     @Test
-    fun `starts Loading before the feed resolves`() = runTest {
-        val viewModel = HomeViewModel(GetHomeFeed(FakeVideoCatalog(CatalogResult.Success(emptyList()))))
+    fun `starts Loading before the composer's first snapshot`() = runTest {
+        val viewModel = HomeViewModel(ComposeHomeFeed(listOf(sourceOf(ShelfId.TENDENCIAS, CatalogResult.Success(emptyList())))))
 
         // Runs the launched coroutine up to (not past) the fake's suspension
         // point, so this actually exercises `load()`'s Loading assignment
@@ -66,21 +79,21 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun `resolves to Content mapping shelves with Spanish meta and display title`() = runTest {
-        val shelf = Shelf(title = "Trending", videos = listOf(video))
-        val viewModel = HomeViewModel(GetHomeFeed(FakeVideoCatalog(CatalogResult.Success(listOf(shelf)))))
+    fun `resolves to Content mapping shelves with Spanish display titles`() = runTest {
+        val shelf = Shelf(id = ShelfId.TENDENCIAS, title = "Trending", videos = listOf(video))
+        val viewModel = HomeViewModel(ComposeHomeFeed(listOf(sourceOf(ShelfId.TENDENCIAS, CatalogResult.Success(listOf(shelf))))))
 
         mainScheduler.advanceUntilIdle()
 
         val expected = HomeUiState.Content(
-            listOf(HomeShelf(title = "Tendencia", videos = listOf(video.toVideoCardUi()))),
+            listOf(HomeShelf(id = ShelfId.TENDENCIAS, title = "Tendencias", videos = listOf(video.toVideoCardUi()))),
         )
         assertEquals(expected, viewModel.state.value)
     }
 
     @Test
-    fun `resolves to Empty`() = runTest {
-        val viewModel = HomeViewModel(GetHomeFeed(FakeVideoCatalog(CatalogResult.Empty)))
+    fun `resolves to Empty when the lead outcome is Empty and no shelf ever lands`() = runTest {
+        val viewModel = HomeViewModel(ComposeHomeFeed(listOf(sourceOf(ShelfId.TENDENCIAS, CatalogResult.Empty))))
 
         mainScheduler.advanceUntilIdle()
 
@@ -88,8 +101,8 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun `resolves to Offline`() = runTest {
-        val viewModel = HomeViewModel(GetHomeFeed(FakeVideoCatalog(CatalogResult.Offline)))
+    fun `resolves to Offline when the lead outcome is Offline and no shelf ever lands`() = runTest {
+        val viewModel = HomeViewModel(ComposeHomeFeed(listOf(sourceOf(ShelfId.TENDENCIAS, CatalogResult.Offline))))
 
         mainScheduler.advanceUntilIdle()
 
@@ -97,9 +110,9 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun `resolves to Error`() = runTest {
+    fun `resolves to Error when the lead outcome is Error and no shelf ever lands`() = runTest {
         val viewModel = HomeViewModel(
-            GetHomeFeed(FakeVideoCatalog(CatalogResult.Error(IllegalStateException("boom")))),
+            ComposeHomeFeed(listOf(sourceOf(ShelfId.TENDENCIAS, CatalogResult.Error(IllegalStateException("boom"))))),
         )
 
         mainScheduler.advanceUntilIdle()
@@ -108,20 +121,53 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun `load re-invokes the feed, re-emitting Loading before the new result`() = runTest {
-        val catalog = FakeVideoCatalog(CatalogResult.Offline)
-        val viewModel = HomeViewModel(GetHomeFeed(catalog))
-        mainScheduler.advanceUntilIdle()
-        assertEquals(HomeUiState.Offline, viewModel.state.value)
+    fun `load cancels a still-open prior collection and re-seeds Loading instead of racing it`() = runTest {
+        val source = MutableFakeShelfSource(id = ShelfId.TENDENCIAS, result = CatalogResult.Offline, delayMs = 30_000L)
+        val viewModel = HomeViewModel(ComposeHomeFeed(listOf(source)))
 
-        catalog.result = CatalogResult.Success(emptyList())
+        // Let the first collection's source start and suspend on its long delay --
+        // WITHOUT advancing past it, so it is still genuinely open.
+        mainScheduler.runCurrent()
+        assertEquals(HomeUiState.Loading, viewModel.state.value)
+        assertEquals(1, source.invocationCount)
+
+        val secondShelf = Shelf(id = ShelfId.TENDENCIAS, title = "Trending", videos = listOf(video))
+        source.result = CatalogResult.Success(listOf(secondShelf))
+        source.delayMs = 1L
         viewModel.load()
 
         mainScheduler.runCurrent()
         assertEquals(HomeUiState.Loading, viewModel.state.value)
+        assertEquals(2, source.invocationCount) // proves the retry re-invoked the source fresh
 
+        // Safe to fully drain now: the first collection (and its 30s delay) was
+        // cancelled by the retry, so it can never reach `_state` again -- only the
+        // second (short) collection remains scheduled.
         mainScheduler.advanceUntilIdle()
+        assertEquals(
+            HomeUiState.Content(
+                listOf(HomeShelf(id = ShelfId.TENDENCIAS, title = "Tendencias", videos = listOf(video.toVideoCardUi()))),
+            ),
+            viewModel.state.value,
+        )
+    }
+}
 
-        assertEquals(HomeUiState.Content(emptyList()), viewModel.state.value)
+/** A mutable single-source fake letting a test change the NEXT [load] call's answer/delay. */
+private class MutableFakeShelfSource(
+    override val id: ShelfId,
+    var result: CatalogResult,
+    var delayMs: Long,
+) : ShelfSource {
+    override val displayTitle: String? = null
+    override val timeoutMs: Long = 60_000L
+
+    var invocationCount = 0
+        private set
+
+    override suspend fun load(): CatalogResult {
+        invocationCount++
+        delay(delayMs)
+        return result
     }
 }

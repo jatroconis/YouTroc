@@ -2,6 +2,7 @@ package com.youtroc.data.extraction.innertube
 
 import com.youtroc.core.domain.catalog.CatalogResult
 import com.youtroc.core.domain.catalog.Shelf
+import com.youtroc.core.domain.catalog.ShelfId
 import com.youtroc.core.domain.catalog.VideoCatalog
 import com.youtroc.data.extraction.catalog.toCatalogResult
 import kotlinx.coroutines.Dispatchers
@@ -57,6 +58,10 @@ class InnerTubeVideoCatalog(
                     innerTubeSearchJson.decodeFromString<SearchResponse>(body)
                 }
 
+                // Placeholder id on both Shelf(...) below: this class only ever seeds the
+                // Tendencias shelf today. ComposeHomeFeed re-tags it via `.copy(id = source.id)`
+                // once wrapped by a ShelfSource (F3), so this value is never actually observed
+                // downstream.
                 val shelf = parsed.regionalShelf()
                 if (shelf != null) {
                     return@withContext CatalogResult.Success(listOf(shelf))
@@ -66,7 +71,9 @@ class InnerTubeVideoCatalog(
                 if (labeledTitle != null) {
                     val flatVideos = parsed.videoRenderers().mapNotNull { it.toVideoOrNull() }
                     if (flatVideos.isNotEmpty()) {
-                        return@withContext CatalogResult.Success(listOf(Shelf(title = labeledTitle, videos = flatVideos)))
+                        return@withContext CatalogResult.Success(
+                            listOf(Shelf(id = ShelfId.TENDENCIAS, title = labeledTitle, videos = flatVideos)),
+                        )
                     }
                 }
             }

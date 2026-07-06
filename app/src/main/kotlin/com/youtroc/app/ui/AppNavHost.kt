@@ -14,7 +14,9 @@ import androidx.navigation.navArgument
 import com.youtroc.app.YouTrocApp
 import com.youtroc.app.ui.player.PlayerScreen
 import com.youtroc.app.ui.player.PlayerViewModel
+import com.youtroc.app.ui.player.ShortsPlayerRoute
 import com.youtroc.app.ui.search.SearchRoute
+import com.youtroc.feature.playback.ShortsQueueItem
 
 /**
  * The app's navigation graph. Three destinations: the Home shell, the
@@ -39,7 +41,21 @@ fun AppNavHost() {
         composable(ROUTE_HOME) {
             HomeShell(
                 onVideoClick = { video ->
-                    navController.navigate("player/${video.id}?title=${Uri.encode(video.title)}")
+                    navController.navigate(
+                        "player/${video.id}?title=${Uri.encode(video.title)}&channel=${Uri.encode(video.channel)}",
+                    )
+                },
+                // Shorts (REQ-HF12): the pager needs the FULL shelf's ids/titles
+                // (not just the clicked one) to page DOWN/UP through it, so the
+                // route carries 3 parallel Uri-encoded, comma-joined lists —
+                // the per-item encode makes any embedded comma safe before the
+                // join, same idiom as the single-video title/channel above,
+                // generalized to a list (see decodeShortsCsv below).
+                onShortsClick = { startId, items ->
+                    val ids = items.joinToString(",") { Uri.encode(it.id) }
+                    val titles = items.joinToString(",") { Uri.encode(it.title) }
+                    val channels = items.joinToString(",") { Uri.encode(it.channel) }
+                    navController.navigate("shorts/$startId?ids=$ids&titles=$titles&channels=$channels")
                 },
                 onOpenSearch = { navController.navigate(ROUTE_SEARCH) },
             )
@@ -48,17 +64,23 @@ fun AppNavHost() {
         composable(ROUTE_SEARCH) {
             SearchRoute(
                 onVideoClick = { video ->
-                    navController.navigate("player/${video.id}?title=${Uri.encode(video.title)}")
+                    navController.navigate(
+                        "player/${video.id}?title=${Uri.encode(video.title)}&channel=${Uri.encode(video.channel)}",
+                    )
                 },
                 onBack = { navController.popBackStack() },
             )
         }
 
         composable(
-            route = "player/{videoId}?title={title}",
+            route = "player/{videoId}?title={title}&channel={channel}",
             arguments = listOf(
                 navArgument("videoId") { type = NavType.StringType },
                 navArgument("title") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+                navArgument("channel") {
                     type = NavType.StringType
                     defaultValue = ""
                 },
@@ -66,6 +88,7 @@ fun AppNavHost() {
         ) { entry ->
             val videoId = entry.arguments?.getString("videoId").orEmpty()
             val title = entry.arguments?.getString("title").orEmpty()
+            val channel = entry.arguments?.getString("channel").orEmpty()
             val context = LocalContext.current
             val viewModel: PlayerViewModel = viewModel(
                 factory = PlayerViewModel.factory(
@@ -79,6 +102,7 @@ fun AppNavHost() {
             PlayerScreen(
                 videoId = videoId,
                 title = title,
+                channel = channel,
                 state = state,
                 onBack = { navController.popBackStack() },
                 onRetry = viewModel::resolve,
@@ -88,12 +112,42 @@ fun AppNavHost() {
                 // THIS entry and resumes its saved position (REQ-12/13,
                 // entry-scoped PlaybackViewModel — unchanged).
                 onUpNextClick = { card ->
-                    navController.navigate("player/${card.id}?title=${Uri.encode(card.title)}")
+                    navController.navigate(
+                        "player/${card.id}?title=${Uri.encode(card.title)}&channel=${Uri.encode(card.channel)}",
+                    )
                 },
+            )
+        }
+
+        composable(
+            route = "shorts/{startId}?ids={ids}&titles={titles}&channels={channels}",
+            arguments = listOf(
+                navArgument("startId") { type = NavType.StringType },
+                navArgument("ids") { type = NavType.StringType; defaultValue = "" },
+                navArgument("titles") { type = NavType.StringType; defaultValue = "" },
+                navArgument("channels") { type = NavType.StringType; defaultValue = "" },
+            ),
+        ) { entry ->
+            val startId = entry.arguments?.getString("startId").orEmpty()
+            val ids = decodeShortsCsv(entry.arguments?.getString("ids"))
+            val titles = decodeShortsCsv(entry.arguments?.getString("titles"))
+            val channels = decodeShortsCsv(entry.arguments?.getString("channels"))
+            val items = ids.indices.map { i ->
+                ShortsQueueItem(id = ids[i], title = titles.getOrElse(i) { "" }, channel = channels.getOrElse(i) { "" })
+            }
+
+            ShortsPlayerRoute(
+                items = items,
+                startId = startId,
+                onBack = { navController.popBackStack() },
             )
         }
     }
 }
+
+/** Reverses the per-item [Uri.encode] + comma-join done at the Shorts-shelf click site. */
+private fun decodeShortsCsv(raw: String?): List<String> =
+    raw.orEmpty().split(",").filter { it.isNotEmpty() }.map(Uri::decode)
 
 private const val ROUTE_HOME = "home"
 private const val ROUTE_SEARCH = "search"

@@ -42,12 +42,18 @@ import kotlinx.coroutines.launch
  *   composition-scoped `remember`, so it survives Activity recreation
  *   alongside this ViewModel instead of being torn down and rebuilt on every
  *   recomposition while the retained ViewModel keeps driving the old one.
+ * - [title]/[channel] (REQ-HF7) back "Seguir viendo" watch history --
+ *   defaulted to "" so existing positional constructions keep compiling;
+ *   the composition root (`PlaybackViewModelFactory`) always supplies both,
+ *   threaded all the way from the nav-arg route.
  */
 class PlaybackViewModel(
     val player: MediaPlayer,
     private val watchProgressStore: WatchProgressStore,
     private val videoId: VideoId,
     private val appScope: CoroutineScope,
+    private val title: String = "",
+    private val channel: String = "",
 ) : ViewModel() {
 
     val playbackState: StateFlow<PlaybackState> = player.state
@@ -121,11 +127,15 @@ class PlaybackViewModel(
      * Persists via [appScope] (BLOCKER B1) — NOT `viewModelScope`, which may
      * already be cancelled (or about to be, mid-write) by the time this
      * entry's `ViewModelStore` clears.
+     *
+     * A live stream (M3) has no meaningful "position" to resume -- it is
+     * never written to watch history.
      */
     private fun persistProgress() {
         val state = playbackState.value
+        if (state.isLive) return
         appScope.launch {
-            watchProgressStore.save(videoId, PlaybackPosition(state.positionMs), state.durationMs)
+            watchProgressStore.save(videoId, PlaybackPosition(state.positionMs), state.durationMs, title, channel)
         }
     }
 

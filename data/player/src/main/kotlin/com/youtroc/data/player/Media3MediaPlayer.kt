@@ -11,6 +11,7 @@ import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.Tracks
+import androidx.media3.common.VideoSize
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
@@ -117,6 +118,20 @@ class Media3MediaPlayer(context: Context) : MediaPlayerPort {
 
     override val state: StateFlow<PlaybackState> = mutableState.asStateFlow()
 
+    /**
+     * Shorts-only (N6, F4): the CURRENT video's true aspect ratio, updated on
+     * every [Player.Listener.onVideoSizeChanged]. Defaults to 9f/16f (portrait)
+     * since Shorts are the only caller that reads this. Deliberately NOT part
+     * of the [MediaPlayerPort] interface — adapter-only, exactly like
+     * [bindSurface] — the aspect-box composable lives in `:app` (F4 decision)
+     * and reads this off the SAME `player as Media3MediaPlayer` cast
+     * `PlaybackRoute` already performs (M1), so this stays PUBLIC (unlike
+     * [bindSurface], which only `:data:player`'s own [com.youtroc.data.player.PlayerSurface]
+     * calls and can stay `internal`).
+     */
+    private val mutableVideoAspect = MutableStateFlow(9f / 16f)
+    val videoAspectRatio: StateFlow<Float> = mutableVideoAspect.asStateFlow()
+
     /** Tied to this player's lifecycle; cancelled in [release]. Main dispatcher: publishState() only touches player/state on the constructing (main) thread. */
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
@@ -142,6 +157,14 @@ class Media3MediaPlayer(context: Context) : MediaPlayerPort {
                 }
                 override fun onPlayerErrorChanged(error: PlaybackException?) = publishState()
                 override fun onPlayerError(error: PlaybackException) = recoverFromUnservableRendition(error)
+
+                override fun onVideoSizeChanged(size: VideoSize) {
+                    // N6: a non-9:16 short must letterbox/pillarbox, not stretch --
+                    // the aspect box in `:app` reads this to size itself per-page.
+                    if (size.height > 0) {
+                        mutableVideoAspect.value = size.width * size.pixelWidthHeightRatio / size.height
+                    }
+                }
 
                 override fun onTracksChanged(tracks: Tracks) {
                     availableQualities = VideoQualityCatalog.from(videoRenditionsOf(tracks))

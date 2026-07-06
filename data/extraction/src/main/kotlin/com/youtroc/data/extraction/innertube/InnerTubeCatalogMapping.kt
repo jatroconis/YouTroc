@@ -1,6 +1,7 @@
 package com.youtroc.data.extraction.innertube
 
 import com.youtroc.core.domain.catalog.Shelf
+import com.youtroc.core.domain.catalog.ShelfId
 import com.youtroc.core.domain.catalog.Video
 
 /**
@@ -57,4 +58,9 @@ internal fun SearchResponse.popularEnShelves(): List<Pair<String, List<Video>>> 
 internal fun SearchResponse.regionalShelf(): Shelf? =
     popularEnShelves()
         .firstOrNull { (_, videos) -> videos.isNotEmpty() }
-        ?.let { (title, videos) -> Shelf(title = title, videos = videos) }
+        ?.let { (title, videos) ->
+            // Placeholder id: this class only ever seeds the Tendencias shelf today.
+            // ComposeHomeFeed re-tags it via `.copy(id = source.id)` once wrapped by a
+            // ShelfSource (F3), so this value is never actually observed downstream.
+            Shelf(id = ShelfId.TENDENCIAS, title = title, videos = videos)
+        }

@@ -25,4 +25,12 @@ object YouTrocDimens {
 
     /** ~2.4 cards visible, matching YouTube's Home shelves (not the denser 4-up). */
     val cardWidth = 320.dp
+
+    /**
+     * Portrait Shorts card width (recon #4604: "~5.5 visible per row", roughly
+     * half [cardWidth]'s on-screen footprint at a 9:16 aspect instead of 16:9).
+     * On-device visual-density tuning is a follow-up task, same as [cardWidth]'s
+     * own YouTube-comparison note.
+     */
+    val shortsCardWidth = 140.dp
 }

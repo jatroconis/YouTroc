@@ -17,6 +17,14 @@ import kotlinx.serialization.Serializable
 internal data class SearchRequest(
     val context: Context,
     val query: String,
+    /**
+     * YouTube's protobuf-encoded search filter (e.g. `"EgJAAQ=="` = the Live
+     * content-type filter, spike #4603 Q1). Additive/nullable-defaulted so
+     * every existing caller keeps sending a plain query untouched;
+     * `explicitNulls = false` (see [innerTubeSearchJson]) drops it from the
+     * encoded body entirely when null, rather than sending `"params":null`.
+     */
+    val params: String? = null,
 )
 
 @Serializable
@@ -91,6 +99,8 @@ internal data class ItemSectionRenderer(
 internal data class RenderItem(
     val videoRenderer: VideoRenderer? = null,
     val shelfRenderer: ShelfRenderer? = null,
+    /** Shorts shelf (spike #4603 Q2) -- see [GridShelfViewModel]. */
+    val gridShelfViewModel: GridShelfViewModel? = null,
 )
 
 /**
@@ -124,6 +134,18 @@ internal data class VideoRenderer(
     val viewCountText: ViewCountText? = null,
     val publishedTimeText: SimpleText? = null,
     val thumbnail: Thumbnail? = null,
+    /** Liveness marker (spike #4603 Q1) -- see [VideoRenderer.hasLiveBadge]. */
+    val badges: List<Badge>? = null,
+)
+
+@Serializable
+internal data class Badge(
+    val metadataBadgeRenderer: MetadataBadgeRenderer? = null,
+)
+
+@Serializable
+internal data class MetadataBadgeRenderer(
+    val style: String? = null,
 )
 
 @Serializable

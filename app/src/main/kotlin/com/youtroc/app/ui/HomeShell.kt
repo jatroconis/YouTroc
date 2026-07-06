@@ -37,6 +37,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.tv.material3.ClickableSurfaceDefaults
@@ -53,8 +54,9 @@ import com.youtroc.core.ui.theme.OnDark
 import com.youtroc.core.ui.theme.OnDarkMuted
 import com.youtroc.core.ui.theme.YouTrocDimens
 import com.youtroc.feature.catalog.HomeContent
-import com.youtroc.feature.catalog.HomeUiState
+import com.youtroc.feature.catalog.HomeFocusTarget
 import com.youtroc.feature.catalog.HomeViewModel
+import com.youtroc.feature.catalog.focusTarget
 
 private val RailExpandedWidth = 240.dp
 
@@ -71,22 +73,30 @@ private val RailExpandedWidth = 240.dp
 @Composable
 fun HomeShell(
     onVideoClick: (VideoCardUi) -> Unit = {},
+    onShortsClick: (startId: String, shelfItems: List<VideoCardUi>) -> Unit = { _, _ -> },
     onOpenSearch: () -> Unit = {},
 ) {
-    val vm: HomeViewModel = viewModel(factory = homeViewModelFactory())
+    val context = LocalContext.current
+    val vm: HomeViewModel = viewModel(factory = homeViewModelFactory(context))
     val state by vm.state.collectAsState()
 
     var selectedIndex by remember { mutableIntStateOf(1) } // Home
     val contentFocus = remember { FocusRequester() }
     var railFocused by remember { mutableStateOf(false) }
 
-    // Re-request focus on EVERY resolved (non-Loading) state — not only Content.
-    // Otherwise, an app that opens straight into Offline (no network at launch)
-    // never gives D-pad RIGHT a target and strands the user in the rail with no
-    // way to reach Retry (the project's recurring focus-trap risk).
-    val hasFocusableContent = state !is HomeUiState.Loading
-    LaunchedEffect(state) {
-        if (hasFocusableContent) {
+    // Re-request focus on every focus-CATEGORY change (NONE -> MESSAGE/CONTENT,
+    // or MESSAGE <-> CONTENT), not on every raw state change (N1). A boolean
+    // latch would collapse Offline/Error/Empty/Content into one bucket: a
+    // Loading -> Offline -> late-Content sequence would never re-fire once
+    // "hasFocusableContent" was already true, stranding focus on a Retry button
+    // that already left composition. Keying on the 3-way category instead means
+    // Content -> Content (a later shelf appending) is a no-op (same category,
+    // preserves the original intent of not stealing focus while browsing), but
+    // a terminal-to-Content flip (MESSAGE -> CONTENT) DOES re-fire and moves
+    // focus off the vanished Retry.
+    val focusTarget = state.focusTarget()
+    LaunchedEffect(focusTarget) {
+        if (focusTarget != HomeFocusTarget.NONE) {
             runCatching { contentFocus.requestFocus() }
         }
     }
@@ -118,6 +128,7 @@ fun HomeShell(
                 HomeContent(
                     state = state,
                     onVideoClick = onVideoClick,
+                    onShortsClick = onShortsClick,
                     onRetry = vm::load,
                     contentFocusRequester = contentFocus,
                     modifier = Modifier.weight(1f).fillMaxWidth(),

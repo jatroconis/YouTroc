@@ -57,6 +57,7 @@ import com.youtroc.core.ui.theme.YouTrocRed
 fun PlayerScreen(
     videoId: String,
     title: String,
+    channel: String,
     state: PlayerUiState,
     onBack: () -> Unit,
     onRetry: () -> Unit,
@@ -74,6 +75,7 @@ fun PlayerScreen(
                 videoId = videoId,
                 manifest = state.manifest,
                 title = state.title,
+                channel = channel,
                 hdr = state.hdr,
                 storyboard = state.storyboard,
                 onUpNextClick = onUpNextClick,

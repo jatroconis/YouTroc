@@ -3,6 +3,7 @@ package com.youtroc.data.extraction.innertube
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -90,5 +91,30 @@ class InnerTubeSearchMappingTest {
         // trackingParams/lengthText/shortViewCountText are all unmodeled) -- this
         // assertion just proves mapped output is unaffected by that drift.
         assertEquals(4, response.videoRenderers().mapNotNull { it.toVideoOrNull() }.size)
+    }
+
+    @Test
+    fun `hasLiveBadge is true when a badge has the LIVE_NOW style`() {
+        val renderer = json.decodeFromString<VideoRenderer>(
+            """{"videoId":"live1","badges":[{"metadataBadgeRenderer":{"style":"BADGE_STYLE_TYPE_LIVE_NOW"}}]}""",
+        )
+
+        assertTrue(renderer.hasLiveBadge())
+    }
+
+    @Test
+    fun `hasLiveBadge is false when no badge has the LIVE_NOW style`() {
+        val renderer = json.decodeFromString<VideoRenderer>(
+            """{"videoId":"notlive1","badges":[{"metadataBadgeRenderer":{"style":"BADGE_STYLE_TYPE_SOMETHING_ELSE"}}]}""",
+        )
+
+        assertFalse(renderer.hasLiveBadge())
+    }
+
+    @Test
+    fun `hasLiveBadge is false when badges is absent`() {
+        val renderer = json.decodeFromString<VideoRenderer>("""{"videoId":"nobadges1"}""")
+
+        assertFalse(renderer.hasLiveBadge())
     }
 }

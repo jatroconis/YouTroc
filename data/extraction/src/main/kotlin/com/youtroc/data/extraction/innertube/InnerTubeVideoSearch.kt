@@ -76,10 +76,12 @@ class InnerTubeVideoSearch(
  * in [InnerTubeVideoSearch.search], never this function. Promoted to
  * `internal` (was `private fun buildRequest`) so [InnerTubeVideoCatalog]
  * reuses it verbatim -- ADR-6. No new headers: only `Content-Type` is set,
- * matching the design-gate-confirmed real request shape.
+ * matching the design-gate-confirmed real request shape. [params] is
+ * additive/nullable-defaulted (spike #4603 Q1) so every existing caller
+ * keeps building a plain query request untouched.
  */
-internal fun buildSearchHttpRequest(query: String, regionCode: String?): Request {
-    val payload = buildSearchRequest(query, regionCode)
+internal fun buildSearchHttpRequest(query: String, regionCode: String?, params: String? = null): Request {
+    val payload = buildSearchRequest(query, regionCode, params)
     val body = innerTubeSearchJson.encodeToString(payload).toRequestBody("application/json".toMediaType())
     return Request.Builder()
         .url(INNERTUBE_SEARCH_URL)
@@ -89,14 +91,16 @@ internal fun buildSearchHttpRequest(query: String, regionCode: String?): Request
 
 /**
  * Builds the InnerTube search request body -- pure construction, no I/O, so
- * the shaping policy (`hl=es`, `gl` from [regionCode]) is directly
+ * the shaping policy (`hl=es`, `gl` from [regionCode], `params`) is directly
  * unit-testable. R2: `gl` mirrors
  * [com.youtroc.data.extraction.search.buildSearchExtractor]'s blank-region
  * convention -- blank/empty regions omit `gl` rather than sending `""`
  * (`explicitNulls = false` alone would NOT omit an empty string, only a
- * null one).
+ * null one). [params] (spike #4603 Q1, e.g. [EnVivoShelfSource]'s Live
+ * content-type filter) is additive/nullable-defaulted: passing `null` keeps
+ * every existing caller's plain query request unchanged.
  */
-internal fun buildSearchRequest(query: String, regionCode: String?): SearchRequest =
+internal fun buildSearchRequest(query: String, regionCode: String?, params: String? = null): SearchRequest =
     SearchRequest(
         context = Context(
             client = Client(
@@ -107,4 +111,5 @@ internal fun buildSearchRequest(query: String, regionCode: String?): SearchReque
             ),
         ),
         query = query,
+        params = params,
     )

@@ -2,6 +2,7 @@ package com.youtroc.data.extraction.catalog
 
 import com.youtroc.core.domain.catalog.CatalogResult
 import com.youtroc.core.domain.catalog.Shelf
+import com.youtroc.core.domain.catalog.ShelfId
 import com.youtroc.core.domain.catalog.Video
 import com.youtroc.core.domain.catalog.VideoCatalog
 import com.youtroc.core.domain.video.VideoId
@@ -28,6 +29,7 @@ class FallbackVideoCatalogTest {
     private val someShelves = CatalogResult.Success(
         shelves = listOf(
             Shelf(
+                id = ShelfId.TENDENCIAS,
                 title = "Popular en Bogotá",
                 videos = listOf(
                     Video(

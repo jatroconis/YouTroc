@@ -70,6 +70,18 @@ internal fun pickThumbnailUrl(thumbnail: Thumbnail?, videoId: String): String =
     thumbnail?.thumbnails.orEmpty().maxByOrNull { it.width }?.url
         ?: "https://i.ytimg.com/vi/$videoId/hq720.jpg"
 
+private const val LIVE_BADGE_STYLE = "BADGE_STYLE_TYPE_LIVE_NOW"
+
+/**
+ * Whether this renderer carries YouTube's "LIVE NOW" badge -- the guard
+ * [com.youtroc.data.extraction.innertube.EnVivoShelfSource] uses to filter
+ * live-only results out of a generic keyword search response (M3): a plain
+ * search for "en vivo" also returns ordinary non-live videos whose
+ * title/description happens to mention it (spike #4603 Q1).
+ */
+internal fun VideoRenderer.hasLiveBadge(): Boolean =
+    badges.orEmpty().any { it.metadataBadgeRenderer?.style == LIVE_BADGE_STYLE }
+
 /**
  * Maps an InnerTube-adapter failure onto the domain's typed outcome.
  * Mirrors [com.youtroc.data.extraction.catalog.toCatalogResult] /

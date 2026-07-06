@@ -26,7 +26,10 @@ import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
+import com.youtroc.core.domain.catalog.ShelfId
 import com.youtroc.core.ui.component.ShelfRow
+import com.youtroc.core.ui.component.ShortsCardUi
+import com.youtroc.core.ui.component.ShortsShelfRow
 import com.youtroc.core.ui.component.VideoCardUi
 import com.youtroc.core.ui.theme.AlmostBlack
 import com.youtroc.core.ui.theme.ElevatedSurface
@@ -58,6 +61,7 @@ import com.youtroc.core.ui.theme.YouTrocDimens
 fun HomeContent(
     state: HomeUiState,
     onVideoClick: (VideoCardUi) -> Unit,
+    onShortsClick: (startId: String, shelfItems: List<VideoCardUi>) -> Unit = { _, _ -> },
     onRetry: () -> Unit,
     contentFocusRequester: FocusRequester,
     modifier: Modifier = Modifier,
@@ -87,14 +91,32 @@ fun HomeContent(
         ) {
             itemsIndexed(
                 items = state.shelves,
-                key = { _, shelf -> shelf.title },
+                // Keyed on the stable ShelfId (design R1), never the display
+                // title: the Tendencias title is a regional passthrough that
+                // can vary between emissions, and a changed key would reset
+                // the row's state/focus mid-session.
+                key = { _, shelf -> shelf.id },
                 contentType = { _, _ -> "shelf" },
             ) { _, shelf ->
-                ShelfRow(
-                    title = shelf.title,
-                    videos = shelf.videos,
-                    onVideoClick = onVideoClick,
-                )
+                if (shelf.id == ShelfId.SHORTS) {
+                    // Portrait cards + player pager instead of the landscape
+                    // ShelfRow/PlaybackRoute pipeline (REQ-HF12, recon #4604).
+                    // The card grid renders the minimal ShortsCardUi (no
+                    // channel/meta), but the CLICK payload carries the full
+                    // VideoCardUi list -- the composition root (:app) needs
+                    // real titles to thread through the player's nav route.
+                    ShortsShelfRow(
+                        title = shelf.title,
+                        videos = shelf.videos.map { it.toShortsCardUi() },
+                        onVideoClick = { card -> onShortsClick(card.id, shelf.videos) },
+                    )
+                } else {
+                    ShelfRow(
+                        title = shelf.title,
+                        videos = shelf.videos,
+                        onVideoClick = onVideoClick,
+                    )
+                }
             }
         }
 
@@ -181,3 +203,16 @@ private fun RetryButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
         )
     }
 }
+
+/**
+ * Drops the channel/meta fields [ShortsCardUi] never renders — a mechanical,
+ * zero-logic field copy, same "no dedicated unit test" precedent this
+ * codebase already applies to [CatalogUiMapping]'s equally trivial
+ * `toVideoCardUi`/`toHomeShelf` (covered indirectly via `HomeViewModelTest`,
+ * never given their own mapping-only test file).
+ */
+private fun VideoCardUi.toShortsCardUi(): ShortsCardUi = ShortsCardUi(
+    id = id,
+    thumbnailUrl = thumbnailUrl,
+    title = title,
+)

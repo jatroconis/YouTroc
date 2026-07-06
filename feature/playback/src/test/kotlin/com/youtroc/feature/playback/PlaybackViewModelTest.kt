@@ -73,7 +73,7 @@ class PlaybackViewModelTest {
     fun `auto-seeks to the saved position once duration is known`() = runTest {
         val player = FakeMediaPlayer()
         val store = FakeWatchProgressStore()
-        store.save(videoId, PlaybackPosition(50_000L), durationMs = 200_000L)
+        store.save(videoId, PlaybackPosition(50_000L), durationMs = 200_000L, title = "", channel = "")
         val viewModel = PlaybackViewModel(player, store, videoId, appScope)
 
         viewModel.start(manifest)
@@ -86,7 +86,7 @@ class PlaybackViewModelTest {
     fun `does not resume when the saved position is not resumable`() = runTest {
         val player = FakeMediaPlayer()
         val store = FakeWatchProgressStore()
-        store.save(videoId, PlaybackPosition(9_000L), durationMs = 200_000L) // under the 10s floor
+        store.save(videoId, PlaybackPosition(9_000L), durationMs = 200_000L, title = "", channel = "") // under the 10s floor
         val viewModel = PlaybackViewModel(player, store, videoId, appScope)
 
         viewModel.start(manifest)
@@ -99,7 +99,7 @@ class PlaybackViewModelTest {
     fun `resume is only applied once per media load`() = runTest {
         val player = FakeMediaPlayer()
         val store = FakeWatchProgressStore()
-        store.save(videoId, PlaybackPosition(50_000L), durationMs = 200_000L)
+        store.save(videoId, PlaybackPosition(50_000L), durationMs = 200_000L, title = "", channel = "")
         val viewModel = PlaybackViewModel(player, store, videoId, appScope)
 
         viewModel.start(manifest)
@@ -205,6 +205,50 @@ class PlaybackViewModelTest {
         appScheduler.advanceUntilIdle()
 
         assertEquals(PlaybackPosition(77_000L), store.load(videoId))
+    }
+
+    /**
+     * F1 regression test: the full 8-hop nav-arg -> ctor -> persist chain
+     * must thread REAL title/channel through, not the "" default -- a
+     * missed hop anywhere along the way would silently ship blank watch
+     * history (REQ-HF7).
+     */
+    @Test
+    fun `pause persists the constructed title and channel, not the blank default`() = runTest {
+        val player = FakeMediaPlayer()
+        val store = FakeWatchProgressStore()
+        val viewModel = PlaybackViewModel(
+            player = player,
+            watchProgressStore = store,
+            videoId = videoId,
+            appScope = appScope,
+            title = "Never Gonna Give You Up",
+            channel = "Rick Astley",
+        )
+        viewModel.start(manifest)
+        player.emitReady(durationMs = 200_000L, positionMs = 42_000L)
+
+        viewModel.pause()
+
+        val entry = store.readAll().single { it.videoId == videoId }
+        assertTrue(entry.title.isNotBlank())
+        assertTrue(entry.channel.isNotBlank())
+        assertEquals("Never Gonna Give You Up", entry.title)
+        assertEquals("Rick Astley", entry.channel)
+    }
+
+    /** M3: a live stream has no meaningful "position" to resume -- must not write history. */
+    @Test
+    fun `pause does not persist watch history while the stream is live`() = runTest {
+        val player = FakeMediaPlayer()
+        val store = FakeWatchProgressStore()
+        val viewModel = PlaybackViewModel(player, store, videoId, appScope)
+        viewModel.start(manifest)
+        player.emitReady(durationMs = 200_000L, positionMs = 42_000L, isLive = true)
+
+        viewModel.pause()
+
+        assertEquals(emptyList(), store.readAll())
     }
 
     /** REQ-Q1/REQ-Q4: `onSelectQuality` is a pure delegation to the port. */

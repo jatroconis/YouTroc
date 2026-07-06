@@ -1,20 +1,22 @@
 package com.youtroc.feature.catalog
 
 import com.youtroc.core.domain.catalog.Shelf
+import com.youtroc.core.domain.catalog.ShelfId
 import com.youtroc.core.domain.catalog.Video
 import com.youtroc.core.ui.component.VideoCardUi
 import java.util.Locale
 
 /**
  * Feature-edge mapping: turns the pure domain catalog types into presentation
- * models. The Spanish user-facing copy ("N vistas · fecha", "Tendencia") lives
+ * models. The Spanish user-facing copy ("N vistas · fecha", shelf titles) lives
  * here — never in `:core:domain` (which stays free of localized strings) nor in
  * `:core:ui` (which stays ignorant of the domain).
  */
 
 /** Maps a domain [Shelf] into a presentation [HomeShelf], applying [shelfDisplayTitle]. */
 internal fun toHomeShelf(shelf: Shelf): HomeShelf = HomeShelf(
-    title = shelfDisplayTitle(shelf.title),
+    id = shelf.id,
+    title = shelfDisplayTitle(shelf.id, shelf.title),
     videos = shelf.videos.map { it.toVideoCardUi() },
 )
 
@@ -28,14 +30,28 @@ internal fun Video.toVideoCardUi(): VideoCardUi = VideoCardUi(
 )
 
 /**
- * The YouTube Trending kiosk's [Shelf.title] arrives as NewPipe's English kiosk
- * name ("Trending"); this maps it to the Spanish shelf title RF-CAT-06 wants.
- * Unknown/future shelf titles pass through unchanged so new shelves degrade
- * gracefully instead of vanishing.
+ * Maps a [Shelf] to its Spanish display title, keyed on [id] (N7) -- the
+ * composer stamps only [id] plus a PASSTHROUGH [sourceTitle], never Spanish
+ * copy, onto [Shelf] (`:core:domain` stays free of localized strings). Every
+ * shelf but [ShelfId.TENDENCIAS] has one fixed Spanish title regardless of
+ * [sourceTitle]. [ShelfId.TENDENCIAS] is special: InnerTube's own "Popular en
+ * {region}" title is ALREADY Spanish and passes through unchanged (M4), while
+ * the NewPipe-fallback kiosk's English "Trending" name is mapped to
+ * "Tendencias" (REQ-HF6).
  */
-internal fun shelfDisplayTitle(sourceTitle: String): String = when (sourceTitle) {
-    "Trending" -> "Tendencia"
-    else -> sourceTitle
+internal fun shelfDisplayTitle(id: ShelfId, sourceTitle: String): String = when (id) {
+    ShelfId.SEGUIR_VIENDO -> "Seguir viendo"
+    ShelfId.SHORTS -> "Shorts"
+    ShelfId.MUSICA -> "Música"
+    ShelfId.VIDEOJUEGOS -> "Videojuegos"
+    ShelfId.NOTICIAS -> "Noticias"
+    ShelfId.DEPORTES -> "Deportes"
+    ShelfId.CINE -> "Cine y tráilers"
+    ShelfId.EN_VIVO -> "En vivo"
+    ShelfId.TENDENCIAS -> when (sourceTitle) {
+        "Trending" -> "Tendencias"
+        else -> sourceTitle
+    }
 }
 
 /**

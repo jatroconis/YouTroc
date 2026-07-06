@@ -60,6 +60,7 @@ fun PlaybackRoute(
     videoId: String,
     manifest: PlaybackManifest,
     title: String,
+    channel: String,
     hdr: HdrFormat,
     storyboard: StoryboardSpec? = null,
     onUpNextClick: (VideoCardUi) -> Unit = {},
@@ -76,6 +77,8 @@ fun PlaybackRoute(
             context = context,
             watchProgressStore = watchProgressStore,
             videoId = VideoId(videoId),
+            title = title,
+            channel = channel,
             appScope = appScope,
         ),
     )

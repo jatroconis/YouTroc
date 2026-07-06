@@ -31,6 +31,8 @@ fun playbackViewModelFactory(
     context: Context,
     watchProgressStore: WatchProgressStore,
     videoId: VideoId,
+    title: String,
+    channel: String,
     appScope: CoroutineScope,
 ) = viewModelFactory {
     initializer {
@@ -39,6 +41,8 @@ fun playbackViewModelFactory(
             watchProgressStore = watchProgressStore,
             videoId = videoId,
             appScope = appScope,
+            title = title,
+            channel = channel,
         )
     }
 }
