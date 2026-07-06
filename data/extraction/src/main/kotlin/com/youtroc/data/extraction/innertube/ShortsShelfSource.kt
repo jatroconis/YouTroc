@@ -24,10 +24,16 @@ import kotlin.coroutines.cancellation.CancellationException
  * (Home wiring); this class is self-contained and independently testable
  * ahead of that wiring.
  */
+/** Same measured on-device ceiling as the thematic shelves (see HomeShelfSources). */
+internal const val SHORTS_TIMEOUT_MS = 8_000L
+
 class ShortsShelfSource(
-    private val client: OkHttpClient = InnerTubeHttp.client,
+    // Derived-by-default so the composition root (`:app`, which cannot call the
+    // internal deriveTimeoutClient) still gets a REAL per-call bound (B1) --
+    // the bare shared client carries no callTimeout at all.
+    private val client: OkHttpClient = deriveTimeoutClient(InnerTubeHttp.client, SHORTS_TIMEOUT_MS),
     private val regionCode: String? = null,
-    override val timeoutMs: Long = 1_500L,
+    override val timeoutMs: Long = SHORTS_TIMEOUT_MS,
 ) : ShelfSource {
 
     override val id: ShelfId = ShelfId.SHORTS

@@ -2,7 +2,8 @@ package com.youtroc.data.extraction.innertube
 
 import com.youtroc.core.domain.catalog.ShelfId
 import com.youtroc.core.domain.catalog.ShelfSource
-import com.youtroc.data.extraction.catalog.NewPipeVideoCatalog
+import com.youtroc.data.extraction.catalog.NewPipeTrendingSearchCatalog
+import com.youtroc.data.extraction.search.NewPipeVideoSearch
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit.MILLISECONDS
 
@@ -18,9 +19,19 @@ import java.util.concurrent.TimeUnit.MILLISECONDS
 internal fun deriveTimeoutClient(base: OkHttpClient, timeoutMs: Long): OkHttpClient =
     base.newBuilder().callTimeout(timeoutMs, MILLISECONDS).build()
 
-/** Tunable per-source ceilings -- on-device seed/timeout tuning is a slice-1 task (B1 residual). */
-private const val TENDENCIAS_TIMEOUT_MS = 1_100L
-private const val THEMATIC_TIMEOUT_MS = 1_500L
+/**
+ * Tunable per-source ceilings, set from ON-DEVICE measurement (TCL 55C6K,
+ * cold start, 2026-07-05): with 9 sources fanning out concurrently over
+ * fresh connections, single search round-trips measured 1.6-3.5s (TLS
+ * handshakes contend on the TV's CPU) and even the local DataStore read
+ * took 1.2s -- the original paper budgets (1100/1500ms) timed out EVERY
+ * network shelf. Late arrivals are cheap (progressive append, REQ-HF3);
+ * a missing shelf is not. So the ceilings are generous: the lead still
+ * lands fast in the warm/typical case, and the thematic shelves simply
+ * append when ready.
+ */
+private const val TENDENCIAS_TIMEOUT_MS = 4_000L
+private const val THEMATIC_TIMEOUT_MS = 8_000L
 
 /**
  * Factory: builds the 7 production [ShelfSource]s for REQ-HF1, each over its
@@ -35,7 +46,10 @@ fun homeShelfSources(regionCode: String?): List<ShelfSource> {
     return listOf(
         TendenciasLeadShelfSource(
             innerTube = InnerTubeVideoCatalog(client = deriveTimeoutClient(base, TENDENCIAS_TIMEOUT_MS), regionCode = regionCode),
-            newPipe = NewPipeVideoCatalog(regionCode = regionCode),
+            // Search-backed late leg: NewPipe's default KIOSK now resolves to
+            // LIVE (YouTube killed the classic Trending page), which mislabeled
+            // live streams into this slot -- see NewPipeTrendingSearchCatalog.
+            newPipe = NewPipeTrendingSearchCatalog(NewPipeVideoSearch(regionCode = regionCode)),
             timeoutMs = TENDENCIAS_TIMEOUT_MS,
         ),
         SearchQueryShelfSource(
