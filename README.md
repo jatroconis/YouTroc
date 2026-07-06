@@ -24,13 +24,16 @@ La extracción corre sobre un **motor InnerTube propio**, migrado por capas *(st
 
 | Función | Código | Validado en dispositivo |
 |---|---|---|
-| Home: **"Popular en {región}"** (motor propio, regional) | ✅ | ⏳ pendiente |
+| Home **multi-estantería** (Seguir viendo, Tendencias regional, temáticas, En vivo, Shorts; carga progresiva) | ✅ | ✅ (C6K) |
+| **"Seguir viendo"** (historial local, solo en el dispositivo) | ✅ | ✅ (C6K) |
 | Búsqueda con teclado en pantalla | ✅ | ✅ (C6K) |
 | Reproducción VOD (DASH/progresivo, ABR) | ✅ | ✅ (C6K) |
 | Reproducción **en vivo** (HLS / DASH-live) | ✅ | ✅ (C6K) |
-| Selector de **calidad** (⚙ → Ajustes → Calidad) | ✅ | ⏳ pendiente |
-| Panel **"A continuación"** dentro del player | ✅ | ⏳ pendiente |
-| Continuar viendo (posición local) | ✅ | ⏳ pendiente |
+| Player estilo Netflix: scrub desacoplado + **preview de frames** (storyboards) | ✅ | ✅ (C6K) |
+| Selector de **calidad** (⚙ → Ajustes → Calidad) + recuperación ante 403 | ✅ | ✅ (C6K) |
+| Panel **"A continuación"** dentro del player | ✅ | ✅ (C6K) |
+| **Shorts** (fila + reproductor vertical con pager D-pad) | ✅ | ⏳ fila ✅ / player pendiente |
+| Continuar viendo (posición local, reanudar) | ✅ | ✅ (C6K) |
 | **HDR10 / HLG** en reproducción (fallback a SDR) | ✅ | ⏳ pendiente (render) |
 | **Prefetch** especulativo del siguiente video | ✅ | ⏳ pendiente (ganancia de latencia) |
 
